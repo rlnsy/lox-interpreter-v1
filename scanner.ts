@@ -1,50 +1,49 @@
-type TokenType =
-  | "EOF"
-  // Single-character tokens
-  | "LEFT_PAREN"
-  | "RIGHT_PAREN"
-  | "LEFT_BRACE"
-  | "RIGHT_BRACE"
-  | "COMMA"
-  | "DOT"
-  | "MINUS"
-  | "PLUS"
-  | "SEMICOLON"
-  | "SLASH"
-  | "STAR"
-  // One or two character tokens
-  | "BANG"
-  | "BANG_EQUAL"
-  | "EQUAL"
-  | "EQUAL_EQUAL"
-  | "GREATER"
-  | "GREATER_EQUAL"
-  | "LESS"
-  | "LESS_EQUAL"
-  // Literals
-  | "IDENTIFIER"
-  | "STRING"
-  | "NUMBER"
-  // Keywords
-  | "AND"
-  | "CLASS"
-  | "ELSE"
-  | "FALSE"
-  | "FUN"
-  | "FOR"
-  | "IF"
-  | "NIL"
-  | "OR"
-  | "PRINT"
-  | "RETURN"
-  | "SUPER"
-  | "THIS"
-  | "TRUE"
-  | "VAR"
-  | "WHILE";
-
 declare global {
   namespace lox {
+    type TokenType =
+      | "EOF"
+      // Single-character tokens
+      | "LEFT_PAREN"
+      | "RIGHT_PAREN"
+      | "LEFT_BRACE"
+      | "RIGHT_BRACE"
+      | "COMMA"
+      | "DOT"
+      | "MINUS"
+      | "PLUS"
+      | "SEMICOLON"
+      | "SLASH"
+      | "STAR"
+      // One or two character tokens
+      | "BANG"
+      | "BANG_EQUAL"
+      | "EQUAL"
+      | "EQUAL_EQUAL"
+      | "GREATER"
+      | "GREATER_EQUAL"
+      | "LESS"
+      | "LESS_EQUAL"
+      // Literals
+      | "IDENTIFIER"
+      | "STRING"
+      | "NUMBER"
+      // Keywords
+      | "AND"
+      | "CLASS"
+      | "ELSE"
+      | "FALSE"
+      | "FUN"
+      | "FOR"
+      | "IF"
+      | "NIL"
+      | "OR"
+      | "PRINT"
+      | "RETURN"
+      | "SUPER"
+      | "THIS"
+      | "TRUE"
+      | "VAR"
+      | "WHILE";
     type Token = {
       type: TokenType;
       lexeme: string | null;
@@ -65,7 +64,7 @@ function isAlpha(c: char) {
   return (c >= "a" && c <= "z") || (c >= "A" && c <= "Z");
 }
 
-const keywords: Record<string, TokenType> = {
+const keywords: Record<string, lox.TokenType> = {
   and: "AND",
   class: "CLASS",
   else: "ELSE",
@@ -95,7 +94,7 @@ function scanTokens(source: string, error: lox.RunErrorHandlerFn): lox.Token[] {
   function isAtEnd() {
     return !(idx < source.length);
   }
-  function addToken(type: TokenType, literal?: unknown) {
+  function addToken(type: lox.TokenType, literal?: unknown) {
     tokens.push({ type, lexeme: source.slice(start, idx), literal });
   }
   function advance() {
