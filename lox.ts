@@ -65,7 +65,7 @@ function report(...args: Parameters<typeof createErrorReport>) {
  */
 function run(source: string): boolean {
   let hasError = false;
-  const error: lox.runErrorHandlerFn = ({ message, line, column, idx }) => {
+  const error: lox.RunErrorHandlerFn = ({ message, line, column, idx }) => {
     let lineContent = "";
     let lineStart = idx;
     // determine the start of the line
@@ -88,8 +88,8 @@ function run(source: string): boolean {
 
 declare global {
   namespace lox {
-    type runErrorHandlerFn = (detail: lox.runErrorDetail) => void;
-    type runErrorDetail = {
+    type RunErrorHandlerFn = (detail: lox.RunErrorDetail) => void;
+    type RunErrorDetail = {
       message: string;
       line: number;
       column: number;

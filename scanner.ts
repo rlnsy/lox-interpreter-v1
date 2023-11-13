@@ -1,51 +1,52 @@
+type TokenType =
+  | "EOF"
+  // Single-character tokens
+  | "LEFT_PAREN"
+  | "RIGHT_PAREN"
+  | "LEFT_BRACE"
+  | "RIGHT_BRACE"
+  | "COMMA"
+  | "DOT"
+  | "MINUS"
+  | "PLUS"
+  | "SEMICOLON"
+  | "SLASH"
+  | "STAR"
+  // One or two character tokens
+  | "BANG"
+  | "BANG_EQUAL"
+  | "EQUAL"
+  | "EQUAL_EQUAL"
+  | "GREATER"
+  | "GREATER_EQUAL"
+  | "LESS"
+  | "LESS_EQUAL"
+  // Literals
+  | "IDENTIFIER"
+  | "STRING"
+  | "NUMBER"
+  // Keywords
+  | "AND"
+  | "CLASS"
+  | "ELSE"
+  | "FALSE"
+  | "FUN"
+  | "FOR"
+  | "IF"
+  | "NIL"
+  | "OR"
+  | "PRINT"
+  | "RETURN"
+  | "SUPER"
+  | "THIS"
+  | "TRUE"
+  | "VAR"
+  | "WHILE";
+
 declare global {
-  namespace scanner {
-    type tokenType =
-      | "EOF"
-      // Single-character tokens
-      | "LEFT_PAREN"
-      | "RIGHT_PAREN"
-      | "LEFT_BRACE"
-      | "RIGHT_BRACE"
-      | "COMMA"
-      | "DOT"
-      | "MINUS"
-      | "PLUS"
-      | "SEMICOLON"
-      | "SLASH"
-      | "STAR"
-      // One or two character tokens
-      | "BANG"
-      | "BANG_EQUAL"
-      | "EQUAL"
-      | "EQUAL_EQUAL"
-      | "GREATER"
-      | "GREATER_EQUAL"
-      | "LESS"
-      | "LESS_EQUAL"
-      // Literals
-      | "IDENTIFIER"
-      | "STRING"
-      | "NUMBER"
-      // Keywords
-      | "AND"
-      | "CLASS"
-      | "ELSE"
-      | "FALSE"
-      | "FUN"
-      | "FOR"
-      | "IF"
-      | "NIL"
-      | "OR"
-      | "PRINT"
-      | "RETURN"
-      | "SUPER"
-      | "THIS"
-      | "TRUE"
-      | "VAR"
-      | "WHILE";
-    type token = {
-      type: scanner.tokenType;
+  namespace lox {
+    type Token = {
+      type: TokenType;
       lexeme: string | null;
       literal?: unknown;
     };
@@ -64,7 +65,7 @@ function isAlpha(c: char) {
   return (c >= "a" && c <= "z") || (c >= "A" && c <= "Z");
 }
 
-const keywords: Record<string, scanner.tokenType> = {
+const keywords: Record<string, TokenType> = {
   and: "AND",
   class: "CLASS",
   else: "ELSE",
@@ -83,11 +84,8 @@ const keywords: Record<string, scanner.tokenType> = {
   while: "WHILE",
 };
 
-function scanTokens(
-  source: string,
-  error: lox.runErrorHandlerFn,
-): scanner.token[] {
-  const tokens: scanner.token[] = [];
+function scanTokens(source: string, error: lox.RunErrorHandlerFn): lox.Token[] {
+  const tokens: lox.Token[] = [];
   let line = 1; // number of current line
   let idx = 0; // index of next character to be consuemed
   let start = idx; // start of current token
@@ -97,7 +95,7 @@ function scanTokens(
   function isAtEnd() {
     return !(idx < source.length);
   }
-  function addToken(type: scanner.tokenType, literal?: unknown) {
+  function addToken(type: TokenType, literal?: unknown) {
     tokens.push({ type, lexeme: source.slice(start, idx), literal });
   }
   function advance() {
