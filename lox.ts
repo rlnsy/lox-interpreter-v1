@@ -65,7 +65,10 @@ function report(...args: Parameters<typeof createErrorReport>) {
  */
 function run(source: string): boolean {
   let hasError = false;
-  const error: lox.RunErrorHandlerFn = ({ message, line, column, idx }) => {
+  const scanError: lox.ScanErrorHandler = ({
+    message,
+    location: { line, column, idx },
+  }) => {
     let lineContent = "";
     let lineStart = idx;
     // determine the start of the line
@@ -79,7 +82,14 @@ function run(source: string): boolean {
     report(message, line, column, lineContent);
     hasError = true;
   };
-  const tokens = scanner.scanTokens(source, error);
+  const parseError: lox.ParseErrorHandler = ({ message, token }) => {
+    // delegate to scan error
+    if (token.start == null) {
+      throw new Error("internal error - no token start location");
+    }
+    return scanError({ message, location: token.start });
+  };
+  const tokens = scanner.scanTokens(source, scanError);
   // if hasError at this point, don't execute code
   if (hasError) return true;
   console.log({ tokens }); // TODO
@@ -88,13 +98,16 @@ function run(source: string): boolean {
 
 declare global {
   namespace lox {
-    type RunErrorHandlerFn = (detail: lox.RunErrorDetail) => void;
-    type RunErrorDetail = {
+    type ScanError = {
       message: string;
-      line: number;
-      column: number;
-      idx: number;
+      location: lox.Location;
     };
+    type ScanErrorHandler = (error: lox.ScanError) => void;
+    type ParseError = {
+      message: string;
+      token: lox.Token;
+    };
+    type ParseErrorHandler = (error: lox.ParseError) => void;
   }
 }
 

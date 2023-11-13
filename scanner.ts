@@ -44,10 +44,16 @@ declare global {
       | "TRUE"
       | "VAR"
       | "WHILE";
+    type Location = {
+      line: number; // line number in the program
+      column: number; // column index in the line
+      idx: number; // global index in the source string
+    };
     type Token = {
       type: TokenType;
       lexeme: string | null;
       literal?: unknown;
+      start: Location | null; // EOF file token does not have a location
     };
   }
 }
@@ -83,7 +89,7 @@ const keywords: Record<string, lox.TokenType> = {
   while: "WHILE",
 };
 
-function scanTokens(source: string, error: lox.RunErrorHandlerFn): lox.Token[] {
+function scanTokens(source: string, error: lox.ScanErrorHandler): lox.Token[] {
   const tokens: lox.Token[] = [];
   let line = 1; // number of current line
   let idx = 0; // index of next character to be consuemed
@@ -95,7 +101,16 @@ function scanTokens(source: string, error: lox.RunErrorHandlerFn): lox.Token[] {
     return !(idx < source.length);
   }
   function addToken(type: lox.TokenType, literal?: unknown) {
-    tokens.push({ type, lexeme: source.slice(start, idx), literal });
+    tokens.push({
+      type,
+      lexeme: source.slice(start, idx),
+      literal,
+      start: {
+        line,
+        idx: start,
+        column: start - lineStart,
+      },
+    });
   }
   function advance() {
     const c = source[idx];
@@ -137,9 +152,11 @@ function scanTokens(source: string, error: lox.RunErrorHandlerFn): lox.Token[] {
     if (isAtEnd()) {
       return error({
         message: "unterminated string",
-        line: stringStartLine,
-        column: stringStartColumn,
-        idx: start,
+        location: {
+          line: stringStartLine,
+          column: stringStartColumn,
+          idx: start,
+        },
       });
     }
     advance(); // closing quote
@@ -210,9 +227,11 @@ function scanTokens(source: string, error: lox.RunErrorHandlerFn): lox.Token[] {
         }
         return error({
           message: "unexpected character",
-          line,
-          column: idx - 1 - lineStart,
-          idx: idx - 1,
+          location: {
+            line,
+            column: idx - 1 - lineStart,
+            idx: idx - 1,
+          },
         });
     }
   }
@@ -220,7 +239,11 @@ function scanTokens(source: string, error: lox.RunErrorHandlerFn): lox.Token[] {
     start = idx;
     scanToken();
   }
-  tokens.push({ type: "EOF", lexeme: null });
+  tokens.push({
+    type: "EOF",
+    lexeme: null,
+    start: null,
+  });
   return tokens;
 }
 
