@@ -63,7 +63,12 @@ function run(source: string): boolean {
 	let hasError = false;
 	const error: lox.runErrorHandlerFn = ({ message, line, column, idx }) => {
 		let lineContent = "";
-		for (let i = idx; i < source.length; i++) {
+		let lineStart = idx;
+		// determine the start of the line
+		while (lineStart > 0 && source[lineStart - 1] != '\n') {
+			lineStart--;
+		}
+		for (let i = lineStart; i < source.length; i++) {
 			if (source[i] === '\n') break;
 			lineContent += source[i];
 		}
