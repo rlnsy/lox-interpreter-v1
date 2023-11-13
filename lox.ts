@@ -1,10 +1,4 @@
-await __bun_run__();
-
-async function __bun_run__() { // bun execution boilerplate
-	// bun-run lox.ts <args>
-	const [_1, _2, ...args] = process.argv;
-	await main(args);
-}
+import { scanner } from "./scanner";
 
 async function main(args: string[]) {
 	if (args.length === 1) {
@@ -19,7 +13,10 @@ async function main(args: string[]) {
 
 async function file(name: string) {
 	const source = await Bun.file(name).text();
-	run(source);
+	const hadError = run(source);
+	if (hadError) {
+		process.exit(65);
+	}
 }
 
 async function repl() {
@@ -32,6 +29,67 @@ async function repl() {
 	}
 }
 
-function run(source: string) {
-	Bun.write(Bun.stdout, "your code: " + source);
+type RunError = {
+	message: string;
+	line: number;
+	column: number;
+
 }
+
+function createErrorReport(message: string, line: number, column: number, lineContent: string): string {
+	let content = `Error: ${message}\n`;
+	content += "    " + `${line} | ${lineContent}\n`;
+	content += "    ";
+	for (let i = 0; i < `${line}`.length; i++) {
+		content += " ";
+	}
+	content += "   ";
+	for (let i = 0; i < column; i++) {
+		content += " ";
+	}
+	content += "^-- here";
+	return content;
+}
+
+function report(...args: Parameters<typeof createErrorReport>) {
+	Bun.write(Bun.stderr, createErrorReport(...args));
+}
+
+/*
+ * Run a program from its source code string representation.
+ * Return true if there was an error running the program.
+ */
+function run(source: string): boolean {
+	let hasError = false;
+	const error: lox.runErrorHandlerFn = ({ message, line, column, idx }) => {
+		let lineContent = "";
+		for (let i = idx; i < source.length; i++) {
+			if (source[i] === '\n') break;
+			lineContent += source[i];
+		}
+		report(message, line, column, lineContent);
+		hasError = true;
+	}
+	const tokens = scanner.scanTokens(source, error);
+	// if hasError at this point, don't execute code
+	if (hasError) return true;
+	console.log({ tokens }); // TODO
+	return hasError;
+}
+
+declare global {
+	namespace lox {
+		type runErrorHandlerFn = (detail: lox.runErrorDetail) => void;
+		type runErrorDetail = {
+			message: string;
+			line: number;
+			column: number;
+			idx: number;
+		}
+	}
+}
+
+export const lox = {
+	main,
+	createErrorReport
+};

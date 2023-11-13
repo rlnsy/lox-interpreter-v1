@@ -1,6 +1,6 @@
 {
   "name": "lox-interpreter",
-  "module": "lox.ts",
+  "module": "main.ts",
   "type": "module",
   "devDependencies": {
     "bun-types": "latest"
