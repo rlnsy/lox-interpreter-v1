@@ -88,10 +88,12 @@ function scanTokens(
   error: lox.runErrorHandlerFn,
 ): scanner.token[] {
   const tokens: scanner.token[] = [];
-  let line = 1;
-  let idx = 0; // global cursor
+  let line = 1; // number of current line
+  let idx = 0; // index of next character to be consuemed
   let start = idx; // start of current token
   let lineStart = idx; // start of current line
+  let stringStartColumn = -1; // column where current string started
+  let stringStartLine = -1; // line where current string started
   function isAtEnd() {
     return !(idx < source.length);
   }
@@ -130,7 +132,7 @@ function scanTokens(
       addToken("SLASH");
     }
   }
-  function string(startLine: number, lineStart: number) {
+  function string() {
     while (peek() != '"' && !isAtEnd()) {
       if (peek() == "\n") newline();
       advance();
@@ -138,8 +140,8 @@ function scanTokens(
     if (isAtEnd()) {
       return error({
         message: "unterminated string",
-        line: startLine,
-        column: start - lineStart,
+        line: stringStartLine,
+        column: stringStartColumn,
         idx: start,
       });
     }
@@ -160,8 +162,6 @@ function scanTokens(
     addToken(keywords[source.slice(start, idx)] || "IDENTIFIER");
   }
   function scanToken() {
-    const charIdx = idx;
-    const charLine = line;
     const c = advance();
     switch (c) {
       // Ignore whitespace.
@@ -202,7 +202,9 @@ function scanTokens(
       case "/":
         return slash();
       case '"':
-        return string(line, lineStart);
+        stringStartLine = line;
+        stringStartColumn = idx - lineStart - 1;
+        return string();
       default:
         if (isDigit(c)) {
           return number();
@@ -211,9 +213,9 @@ function scanTokens(
         }
         return error({
           message: "unexpected character",
-          line: charLine,
-          column: charIdx - lineStart,
-          idx: charIdx,
+          line,
+          column: idx - 1 - lineStart,
+          idx: idx - 1,
         });
     }
   }
