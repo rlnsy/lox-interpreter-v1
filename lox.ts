@@ -57,6 +57,7 @@ function createErrorReport(
   line: number,
   column: number,
   lineContent: string,
+  label = "here",
 ): string {
   let content = `Error: ${message}\n`;
   content += "    " + `${line} | ${lineContent}\n`;
@@ -68,7 +69,7 @@ function createErrorReport(
   for (let i = 0; i < column; i++) {
     content += " ";
   }
-  content += "^-- here";
+  content += `^-- ${label}\n`;
   return content;
 }
 
@@ -82,9 +83,10 @@ function report(...args: Parameters<typeof createErrorReport>) {
  */
 function run(source: string): boolean {
   let hasError = false;
-  const scanError: lox.ScanErrorHandler = ({
+  const error: lox.ErrorHandler = ({
     message,
     location: { line, column, idx },
+    label,
   }) => {
     let lineContent = "";
     let lineStart = idx;
@@ -96,16 +98,12 @@ function run(source: string): boolean {
       if (source[i] === "\n") break;
       lineContent += source[i];
     }
-    report(message, line, column, lineContent);
+    report(message, line, column, lineContent, label);
     hasError = true;
   };
-  const parseError: lox.ParseErrorHandler = ({ message }) => {
-    Bun.write(Bun.stderr, message);
-    hasError = true;
-  };
-  const tokens = scanner.scanTokens(source, scanError);
+  const tokens = scanner.scanTokens(source, error);
   if (hasError) return true;
-  const ast = parser.parse(tokens, parseError);
+  const ast = parser.parse(tokens, error);
   if (hasError) return true;
   console.log(`${ast}`); // TODO
   return hasError;
@@ -113,15 +111,12 @@ function run(source: string): boolean {
 
 declare global {
   namespace lox {
-    type ScanError = {
+    type Error = {
       message: string;
       location: lox.Location;
+      label?: string;
     };
-    type ScanErrorHandler = (error: lox.ScanError) => void;
-    type ParseError = {
-      message: string;
-    };
-    type ParseErrorHandler = (error: lox.ParseError) => void;
+    type ErrorHandler = (error: lox.Error) => void;
   }
 }
 

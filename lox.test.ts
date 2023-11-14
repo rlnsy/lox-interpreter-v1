@@ -8,14 +8,16 @@ describe("createErrorReport", () => {
     ).toEqual(
       `Error: invalid token
     1 | this is not valid code
-        ^-- here`,
+        ^-- here
+`,
     );
   });
   test("line 2 column 6", () => {
     expect(lox.createErrorReport("invalid token", 2, 6, "print $")).toEqual(
       `Error: invalid token
     2 | print $
-              ^-- here`,
+              ^-- here
+`,
     );
   });
 });

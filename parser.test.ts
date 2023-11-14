@@ -1,16 +1,14 @@
 import { describe, test, expect, mock } from "bun:test";
 import { parser } from "./parser";
 import { Literal, Parenthesized, Unary, Binary } from "./expression";
+import { EOF } from "./scanner";
 
 describe("parse", () => {
   // use this when the location of a token doesn't matter
   const start: lox.Location = { line: 1, column: 0, idx: 0 };
   test("literal nil", () => {
     const error = mock(() => {});
-    const tokens: lox.Token[] = [
-      { type: "NIL", lexeme: "nil", start },
-      { type: "EOF", lexeme: null, start },
-    ];
+    const tokens: lox.Token[] = [{ type: "NIL", lexeme: "nil", start }, EOF];
     const result = parser.parse(tokens, error);
     expect(error).not.toHaveBeenCalled();
     expect(result).toBeInstanceOf(Literal);
@@ -20,7 +18,7 @@ describe("parse", () => {
     const error = mock(() => {});
     const tokens: lox.Token[] = [
       { type: "NUMBER", lexeme: "22", literal: 22, start },
-      { type: "EOF", lexeme: null, start },
+      EOF,
     ];
     const result = parser.parse(tokens, error);
     expect(error).not.toHaveBeenCalled();
@@ -33,7 +31,7 @@ describe("parse", () => {
       { type: "LEFT_PAREN", lexeme: "(", start },
       { type: "NIL", lexeme: "nil", start },
       { type: "RIGHT_PAREN", lexeme: ")", start },
-      { type: "EOF", lexeme: null, start },
+      EOF,
     ];
     const result = parser.parse(tokens, error);
     expect(error).not.toHaveBeenCalled();
@@ -45,7 +43,7 @@ describe("parse", () => {
     const tokens: lox.Token[] = [
       { type: "BANG", lexeme: "!", start },
       { type: "FALSE", lexeme: "false", start },
-      { type: "EOF", lexeme: null, start },
+      EOF,
     ];
     const result = parser.parse(tokens, error);
     expect(error).not.toHaveBeenCalled();
@@ -63,7 +61,7 @@ describe("parse", () => {
       { type: "BANG", lexeme: "!", start },
       { type: "BANG", lexeme: "!", start },
       { type: "FALSE", lexeme: "false", start },
-      { type: "EOF", lexeme: null, start },
+      EOF,
     ];
     const result = parser.parse(tokens, error);
     expect(error).not.toHaveBeenCalled();
@@ -81,7 +79,7 @@ describe("parse", () => {
       { type: "NUMBER", lexeme: "1", literal: 1, start },
       { type: "SLASH", lexeme: "/", start },
       { type: "NUMBER", lexeme: "2", literal: 2, start },
-      { type: "EOF", lexeme: null, start },
+      EOF,
     ];
     const result = parser.parse(tokens, error);
     expect(error).not.toHaveBeenCalled();
@@ -104,7 +102,7 @@ describe("parse", () => {
       { type: "STAR", lexeme: "*", start },
       { type: "NUMBER", lexeme: "3", literal: 3, start },
       { type: "RIGHT_PAREN", lexeme: ")", start },
-      { type: "EOF", lexeme: null, start },
+      EOF,
     ];
     const result = parser.parse(tokens, error);
     expect(error).not.toHaveBeenCalled();
@@ -128,7 +126,7 @@ describe("parse", () => {
       { type: "RIGHT_PAREN", lexeme: ")", start },
       { type: "STAR", lexeme: "*", start },
       { type: "NUMBER", lexeme: "3", literal: 3, start },
-      { type: "EOF", lexeme: null, start },
+      EOF,
     ];
     const result = parser.parse(tokens, error);
     expect(error).not.toHaveBeenCalled();
@@ -155,7 +153,7 @@ describe("parse", () => {
       { type: "RIGHT_PAREN", lexeme: ")", start },
       { type: "PLUS", lexeme: "+", start },
       { type: "NUMBER", lexeme: "1", literal: 1, start },
-      { type: "EOF", lexeme: null, start },
+      EOF,
     ];
     const result = parser.parse(tokens, error);
     expect(error).not.toHaveBeenCalled();

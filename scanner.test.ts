@@ -1,8 +1,7 @@
-import { scanner } from "./scanner";
+import { scanner, EOF } from "./scanner";
 import { describe, test, expect, mock, jest } from "bun:test";
 
 describe("scanTokens", () => {
-  const EOF: lox.Token = { type: "EOF", lexeme: null, start: null };
   test("ϵ", () => {
     const error = mock(() => {});
     const tokens = scanner.scanTokens("", error);
@@ -316,6 +315,7 @@ describe("scanTokens", () => {
       {
         message: "unterminated string",
         location: start,
+        label: "started here",
       },
     ]);
   });
@@ -328,6 +328,7 @@ describe("scanTokens", () => {
     expect(errors).toEqual([
       {
         message: "unterminated string",
+        label: "started here",
         location: {
           line: 1,
           column: 4,
@@ -345,6 +346,7 @@ describe("scanTokens", () => {
     expect(errors).toEqual([
       {
         message: "unterminated string",
+        label: "started here",
         location: {
           line: 1,
           column: 4,

@@ -51,9 +51,9 @@ declare global {
     };
     type Token = {
       type: TokenType;
-      lexeme: string | null;
+      lexeme: string;
       literal?: unknown;
-      start: Location | null; // EOF file token does not have a location
+      start: Location;
     };
   }
 }
@@ -61,6 +61,12 @@ declare global {
 type char = string;
 
 const NULL_CHAR = "\0";
+
+export const EOF: lox.Token = {
+  type: "EOF",
+  lexeme: "EOF",
+  start: { line: -1, column: -1, idx: -1 },
+};
 
 function isDigit(c: char) {
   return c >= "0" && c <= "9";
@@ -89,7 +95,7 @@ const keywords: Record<string, lox.TokenType> = {
   while: "WHILE",
 };
 
-function scanTokens(source: string, error: lox.ScanErrorHandler): lox.Token[] {
+function scanTokens(source: string, error: lox.ErrorHandler): lox.Token[] {
   const tokens: lox.Token[] = [];
   let line = 1; // number of current line
   let idx = 0; // index of next character to be consuemed
@@ -157,6 +163,7 @@ function scanTokens(source: string, error: lox.ScanErrorHandler): lox.Token[] {
           column: stringStartColumn,
           idx: start,
         },
+        label: "started here",
       });
     }
     advance(); // closing quote
@@ -239,11 +246,7 @@ function scanTokens(source: string, error: lox.ScanErrorHandler): lox.Token[] {
     start = idx;
     scanToken();
   }
-  tokens.push({
-    type: "EOF",
-    lexeme: null,
-    start: null,
-  });
+  tokens.push(EOF);
   return tokens;
 }
 

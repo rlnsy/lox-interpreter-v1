@@ -14,11 +14,11 @@ export class ParseError extends Error {}
  */
 function parse(
   tokens: lox.Token[],
-  errorHandler: lox.ParseErrorHandler,
+  errorHandler: lox.ErrorHandler,
 ): Expression | null {
   let idx = 0;
 
-  function error(err: lox.ParseError) {
+  function error(err: lox.Error) {
     errorHandler(err);
     return new ParseError();
   }
@@ -55,7 +55,12 @@ function parse(
     return isMatch;
   }
 
+  let startOfExpression: lox.Token = tokens[0];
+
   function expression() {
+    if (!isAtEnd()) {
+      startOfExpression = peek();
+    }
     return equality();
   }
 
@@ -119,20 +124,28 @@ function parse(
       return new Literal(previous().literal);
     }
     if (match("LEFT_PAREN")) {
+      const start = previous();
       const expr: Expression = expression();
       if (match("RIGHT_PAREN")) {
         return new Parenthesized(expr);
       } else {
         throw error({
           message: `expected closing ')' but found '${peek().lexeme ?? "EOF"}'`,
+          location: start.start,
+          label: "opened here",
         });
       }
     }
     if (isAtEnd()) {
-      throw error({ message: "reached end of input while parsing expression" });
+      throw error({
+        message: "reached end of input while parsing expression",
+        location: startOfExpression.start,
+        label: "expression started here",
+      });
     } else {
       throw error({
         message: `expected an expression but found '${peek().lexeme}'`,
+        location: peek().start,
       });
     }
   }
@@ -140,7 +153,10 @@ function parse(
   try {
     const expr = expression();
     if (!isAtEnd()) {
-      throw error({ message: `unexpected token: '${peek().lexeme}'` });
+      throw error({
+        message: `unexpected token: '${peek().lexeme}'`,
+        location: peek().start,
+      });
     }
     return expr;
   } catch (error) {

@@ -5,8 +5,8 @@ import { parser } from "./parser";
 describe("scan ==> parse", () => {
   function execute(source: string, error: unknown) {
     return `${parser.parse(
-      scanner.scanTokens(source, error as lox.ScanErrorHandler),
-      error as lox.ParseErrorHandler,
+      scanner.scanTokens(source, error as lox.ErrorHandler),
+      error as lox.ErrorHandler,
     )}`;
   }
   function run_test(
@@ -76,6 +76,11 @@ describe("scan ==> parse", () => {
     expect(errors).toEqual([
       {
         message: "expected an expression but found '+'",
+        location: {
+          line: 1,
+          column: 0,
+          idx: 0,
+        },
       },
     ]);
   });
@@ -83,6 +88,12 @@ describe("scan ==> parse", () => {
     expect(errors).toEqual([
       {
         message: "reached end of input while parsing expression",
+        label: "expression started here",
+        location: {
+          line: 1,
+          column: 0,
+          idx: 0,
+        },
       },
     ]);
   });
@@ -90,6 +101,11 @@ describe("scan ==> parse", () => {
     expect(errors).toEqual([
       {
         message: "expected an expression but found '/'",
+        location: {
+          line: 1,
+          column: 5,
+          idx: 5,
+        },
       },
     ]);
   });
@@ -97,6 +113,11 @@ describe("scan ==> parse", () => {
     expect(errors).toEqual([
       {
         message: "unexpected token: 'a'",
+        location: {
+          line: 1,
+          column: 4,
+          idx: 4,
+        },
       },
     ]);
   });
@@ -104,6 +125,12 @@ describe("scan ==> parse", () => {
     expect(errors).toEqual([
       {
         message: "expected closing ')' but found 'EOF'",
+        label: "opened here",
+        location: {
+          line: 1,
+          column: 0,
+          idx: 0,
+        },
       },
     ]);
   });
@@ -111,6 +138,12 @@ describe("scan ==> parse", () => {
     expect(errors).toEqual([
       {
         message: "expected closing ')' but found 'EOF'",
+        label: "opened here",
+        location: {
+          line: 1,
+          column: 1,
+          idx: 1,
+        },
       },
     ]);
   });
@@ -118,6 +151,12 @@ describe("scan ==> parse", () => {
     expect(errors).toEqual([
       {
         message: "expected closing ')' but found 'EOF'",
+        label: "opened here",
+        location: {
+          line: 1,
+          column: 0,
+          idx: 0,
+        },
       },
     ]);
   });
