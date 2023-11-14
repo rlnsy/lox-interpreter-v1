@@ -1,12 +1,22 @@
 import { scanner } from "./scanner";
+import { parser } from "./parser";
 
 async function main(args: string[]) {
   if (args.length === 1) {
     await file(args[0]);
   } else if (args.length === 0) {
     await repl();
+  } else if (args.length === 2 && args[0] === "eval") {
+    evaluate(args[1]);
   } else {
-    Bun.write(Bun.stderr, "expected 0 or 1 arguments");
+    Bun.write(
+      Bun.stderr,
+      `Example usage:
+	1. lox
+	2. lox hello-world.lox
+	3. lox eval "hello world"
+`,
+    );
     process.exit(64);
   }
 }
@@ -26,6 +36,13 @@ async function repl() {
   for await (const chunk of Bun.stdin.stream()) {
     run(utf8Decoder.decode(chunk));
     Bun.write(Bun.stdout, prompt);
+  }
+}
+
+async function evaluate(source: string) {
+  const hadError = run(source);
+  if (hadError) {
+    process.exit(65);
   }
 }
 
@@ -82,17 +99,15 @@ function run(source: string): boolean {
     report(message, line, column, lineContent);
     hasError = true;
   };
-  const parseError: lox.ParseErrorHandler = ({ message, token }) => {
-    // delegate to scan error
-    if (token.start == null) {
-      throw new Error("internal error - no token start location");
-    }
-    return scanError({ message, location: token.start });
+  const parseError: lox.ParseErrorHandler = ({ message }) => {
+    Bun.write(Bun.stderr, message);
+    hasError = true;
   };
   const tokens = scanner.scanTokens(source, scanError);
-  // if hasError at this point, don't execute code
   if (hasError) return true;
-  console.log({ tokens }); // TODO
+  const ast = parser.parse(tokens, parseError);
+  if (hasError) return true;
+  console.log(`${ast}`); // TODO
   return hasError;
 }
 
@@ -105,7 +120,6 @@ declare global {
     type ScanErrorHandler = (error: lox.ScanError) => void;
     type ParseError = {
       message: string;
-      token: lox.Token;
     };
     type ParseErrorHandler = (error: lox.ParseError) => void;
   }

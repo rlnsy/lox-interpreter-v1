@@ -1,5 +1,10 @@
 export abstract class Expression {
   abstract accept<T>(worker: ExpressionWorker<T>): T;
+  // debug display
+  abstract display(): string;
+  toString() {
+    return this.display();
+  }
 }
 
 export class Binary extends Expression {
@@ -13,6 +18,9 @@ export class Binary extends Expression {
   ) {
     super();
   }
+  display(): string {
+    return `[binary: ${this.operator.lexeme} ${this.left} ${this.right}]`;
+  }
 }
 
 export class Parenthesized extends Expression {
@@ -21,6 +29,9 @@ export class Parenthesized extends Expression {
   }
   constructor(public expression: Expression) {
     super();
+  }
+  display() {
+    return `[group: ${this.expression}]`;
   }
 }
 
@@ -34,6 +45,9 @@ export class Unary extends Expression {
   ) {
     super();
   }
+  display() {
+    return `[unary: ${this.operator.lexeme} ${this.operand}]`;
+  }
 }
 
 export class Literal extends Expression {
@@ -42,6 +56,9 @@ export class Literal extends Expression {
   }
   constructor(public value: unknown) {
     super();
+  }
+  display() {
+    return `[literal: ${this.value}]`;
   }
 }
 
