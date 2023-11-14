@@ -20,7 +20,7 @@ describe("scan ==> parse", () => {
     });
   }
   function error_test(input: string, fn: (errors: unknown[]) => void) {
-    test(`(err) - ${input}`, () => {
+    test(`~err~ ${input}`, () => {
       const errors: unknown[] = [];
       const error = mock((err) => {
         errors.push(err);
@@ -75,7 +75,7 @@ describe("scan ==> parse", () => {
   error_test("+", (errors) => {
     expect(errors).toEqual([
       {
-        message: "expected an expression but found '+'",
+        message: "expected start of expression but found '+'",
         location: {
           line: 1,
           column: 0,
@@ -100,7 +100,7 @@ describe("scan ==> parse", () => {
   error_test("1 + (/)", (errors) => {
     expect(errors).toEqual([
       {
-        message: "expected an expression but found '/'",
+        message: "expected start of expression but found '/'",
         location: {
           line: 1,
           column: 5,
@@ -156,6 +156,117 @@ describe("scan ==> parse", () => {
           line: 1,
           column: 0,
           idx: 0,
+        },
+      },
+    ]);
+  });
+  error_test(" == ", (errors) => {
+    expect(errors).toEqual([
+      {
+        message: "expected start of expression but found '=='",
+        location: {
+          line: 1,
+          column: 1,
+          idx: 1,
+        },
+      },
+    ]);
+  });
+  error_test("1 == ", (errors) => {
+    expect(errors).toEqual([
+      {
+        message: "reached end of input while parsing expression",
+        label: "expression started here",
+        location: {
+          line: 1,
+          column: 0,
+          idx: 0,
+        },
+      },
+    ]);
+  });
+  error_test("true == 1 > ", (errors) => {
+    expect(errors).toEqual([
+      {
+        message: "reached end of input while parsing expression",
+        label: "expression started here",
+        location: {
+          line: 1,
+          column: 0,
+          idx: 0,
+        },
+      },
+    ]);
+  });
+  error_test("true == 1 > !", (errors) => {
+    expect(errors).toEqual([
+      {
+        message: "reached end of input while parsing expression",
+        label: "expression started here",
+        location: {
+          line: 1,
+          column: 0,
+          idx: 0,
+        },
+      },
+    ]);
+  });
+  error_test("1 + (2 + )", (errors) => {
+    expect(errors).toEqual([
+      {
+        message: "unexpected token ')'",
+        location: {
+          line: 1,
+          column: 9,
+          idx: 9,
+        },
+      },
+    ]);
+  });
+  error_test("()", (errors) => {
+    expect(errors).toEqual([
+      {
+        message: "expected start of expression but found ')'",
+        location: {
+          line: 1,
+          column: 1,
+          idx: 1,
+        },
+      },
+    ]);
+  });
+  error_test("1 + ()", (errors) => {
+    expect(errors).toEqual([
+      {
+        message: "expected start of expression but found ')'",
+        location: {
+          line: 1,
+          column: 5,
+          idx: 5,
+        },
+      },
+    ]);
+  });
+  error_test("1 + (()", (errors) => {
+    expect(errors).toEqual([
+      {
+        message: "expected start of expression but found ')'",
+        location: {
+          line: 1,
+          column: 6,
+          idx: 6,
+        },
+      },
+    ]);
+  });
+  error_test("1 + (+)", (errors) => {
+    expect(errors).toEqual([
+      {
+        message: "expected start of expression but found '+'",
+        location: {
+          line: 1,
+          column: 5,
+          idx: 5,
         },
       },
     ]);

@@ -142,9 +142,14 @@ function parse(
         location: startOfExpression.start,
         label: "expression started here",
       });
+    } else if (peek().start.idx === startOfExpression.start.idx) {
+      throw error({
+        message: `expected start of expression but found '${peek().lexeme}'`,
+        location: peek().start,
+      });
     } else {
       throw error({
-        message: `expected an expression but found '${peek().lexeme}'`,
+        message: `unexpected token '${peek().lexeme}'`,
         location: peek().start,
       });
     }
