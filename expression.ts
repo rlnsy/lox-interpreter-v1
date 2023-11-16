@@ -54,7 +54,7 @@ export class Literal extends Expression {
   accept<T>(worker: ExpressionWorker<T>) {
     return worker.examineLiteral(this);
   }
-  constructor(public value: unknown) {
+  constructor(public value: lox.Value) {
     super();
   }
   display() {

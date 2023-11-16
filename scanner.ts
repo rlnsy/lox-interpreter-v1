@@ -49,10 +49,11 @@ declare global {
       column: number; // column index in the line
       idx: number; // global index in the source string
     };
+    type Value = number | string | boolean | null; // internal value representation
     type Token = {
       type: TokenType;
       lexeme: string;
-      literal?: unknown;
+      literal?: Value;
       start: Location;
     };
   }
@@ -106,7 +107,7 @@ function scanTokens(source: string, error: lox.ErrorHandler): lox.Token[] {
   function isAtEnd() {
     return !(idx < source.length);
   }
-  function addToken(type: lox.TokenType, literal?: unknown) {
+  function addToken(type: lox.TokenType, literal?: lox.Value) {
     tokens.push({
       type,
       lexeme: source.slice(start, idx),

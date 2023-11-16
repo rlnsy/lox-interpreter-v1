@@ -1,5 +1,7 @@
 import { scanner } from "./scanner";
 import { parser } from "./parser";
+import { evaluator } from "./evaluator";
+import { Expression } from "./expression";
 
 async function main(args: string[]) {
   if (args.length === 1) {
@@ -23,10 +25,7 @@ async function main(args: string[]) {
 
 async function file(name: string) {
   const source = await Bun.file(name).text();
-  const hadError = run(source);
-  if (hadError) {
-    process.exit(65);
-  }
+  return evaluate(source);
 }
 
 async function repl() {
@@ -40,9 +39,11 @@ async function repl() {
 }
 
 async function evaluate(source: string) {
-  const hadError = run(source);
+  const [hadError, hadRuntimeError] = run(source);
   if (hadError) {
     process.exit(65);
+  } else if (hadRuntimeError) {
+    process.exit(70);
   }
 }
 
@@ -81,13 +82,10 @@ function report(...args: Parameters<typeof createErrorReport>) {
  * Run a program from its source code string representation.
  * Return true if there was an error running the program.
  */
-function run(source: string): boolean {
+function run(source: string): [boolean, boolean] {
   let hasError = false;
-  const error: lox.ErrorHandler = ({
-    message,
-    location: { line, column, idx },
-    label,
-  }) => {
+  let hasRuntimeError = false;
+  function getLineContent(idx: number): string {
     let lineContent = "";
     let lineStart = idx;
     // determine the start of the line
@@ -98,15 +96,34 @@ function run(source: string): boolean {
       if (source[i] === "\n") break;
       lineContent += source[i];
     }
+    return lineContent;
+  }
+  const error: lox.ErrorHandler = ({
+    message,
+    location: { line, column, idx },
+    label,
+  }) => {
+    const lineContent = getLineContent(idx);
     report(message, line, column, lineContent, label);
     hasError = true;
   };
+  const runtimeError: lox.ErrorHandler = ({
+    message,
+    location: { line, column, idx },
+    label,
+  }) => {
+    const lineContent = getLineContent(idx);
+    report(message, line, column, lineContent, label);
+    hasRuntimeError = true;
+  };
   const tokens = scanner.scanTokens(source, error);
-  if (hasError) return true;
+  if (hasError) return [true, false];
   const ast = parser.parse(tokens, error);
-  if (hasError) return true;
-  console.log(`${ast}`); // TODO
-  return hasError;
+  if (hasError || ast == null) return [true, false];
+  const result = evaluator.evaluate(ast, runtimeError);
+  if (hasRuntimeError) return [false, true];
+  Bun.write(Bun.stdout, `${result}`);
+  return [hasError, hasRuntimeError];
 }
 
 declare global {

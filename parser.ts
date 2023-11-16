@@ -5,6 +5,7 @@ import {
   Parenthesized,
   Literal,
 } from "./expression";
+import { asNotUndefined } from "./util";
 
 export class ParseError extends Error {}
 
@@ -121,7 +122,7 @@ function parse(
     if (match("FALSE")) return new Literal(false);
     if (match("NIL")) return new Literal(null);
     if (match("NUMBER") || match("STRING")) {
-      return new Literal(previous().literal);
+      return new Literal(asNotUndefined(previous().literal));
     }
     if (match("LEFT_PAREN")) {
       const start = previous();
