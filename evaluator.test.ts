@@ -1,5 +1,5 @@
 import { describe, test, expect, mock } from "bun:test";
-import { Expression, Literal, Unary, Parenthesized, Binary } from "./ast";
+import { Program, Literal, Unary, Parenthesized, Binary } from "./ast";
 import { evaluator } from "./evaluator";
 
 describe("evaluator", () => {
@@ -16,7 +16,7 @@ describe("evaluator", () => {
   const HELLO = new Literal("hello");
   const DIVIDE = { type: "SLASH", lexeme: "/", start } as const;
   const LESS = { type: "LESS", lexeme: "<", start } as const;
-  const cases: [Expression, lox.Value][] = [
+  const cases: [Program, lox.Value][] = [
     [ONE, 1],
     [HELLO, "hello"],
     [new Unary(MINUS, ONE), -1],
@@ -40,7 +40,7 @@ describe("evaluator", () => {
       expect(result).toEqual(expected);
     });
   });
-  const errorCases: [Expression, lox.Error][] = [
+  const errorCases: [Program, lox.Error][] = [
     [
       new Binary(DIVIDE, ONE, ZERO),
       { message: "divide by zero", location: start },

@@ -1,4 +1,11 @@
-import { Expression, Unary, Binary, Parenthesized, Literal } from "./ast";
+import {
+  Program,
+  Expression,
+  Unary,
+  Binary,
+  Parenthesized,
+  Literal,
+} from "./ast";
 import { asNotUndefined } from "./util";
 
 export class ParseError extends Error {}
@@ -10,7 +17,7 @@ export class ParseError extends Error {}
 function parse(
   tokens: lox.Token[],
   errorHandler: lox.ErrorHandler,
-): Expression | null {
+): Program | null {
   let idx = 0;
 
   function error(err: lox.Error) {

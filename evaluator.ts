@@ -1,10 +1,10 @@
 import {
   Binary,
-  Expression,
-  ExpressionWorker,
+  Program,
   Literal,
   Parenthesized,
   Unary,
+  ExpressionExaminer,
 } from "./ast";
 
 function isNumber(value: lox.Value): value is number {
@@ -50,13 +50,13 @@ function loxTypeOf(value: lox.Value) {
 const unreachable: lox.Value =
   "Look at you, sneaky weasel. You reached some unreachable code!";
 
-class Evaluator extends ExpressionWorker<lox.Value> {
+class Evaluator extends ExpressionExaminer<lox.Value> {
   constructor(private error: lox.ErrorHandler) {
     super();
   }
-  evaluate(e: Expression): lox.Value | null {
+  evaluate(p: Program): lox.Value | null {
     try {
-      return this.examine(e);
+      return this.examine(p);
     } catch (error) {
       if (error instanceof EvaluationRuntimeError) {
         this.error({
@@ -133,7 +133,7 @@ class Evaluator extends ExpressionWorker<lox.Value> {
 }
 
 export const evaluator = {
-  evaluate(e: Expression, errorHandler: lox.ErrorHandler) {
-    return new Evaluator(errorHandler).evaluate(e);
+  evaluate(p: Program, errorHandler: lox.ErrorHandler) {
+    return new Evaluator(errorHandler).evaluate(p);
   },
 };

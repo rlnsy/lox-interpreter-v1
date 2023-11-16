@@ -1,5 +1,4 @@
-export abstract class Expression {
-  abstract accept<T>(worker: ExpressionWorker<T>): T;
+abstract class ASTNode {
   // debug display
   abstract display(): string;
   toString() {
@@ -7,9 +6,15 @@ export abstract class Expression {
   }
 }
 
+export type Program = Expression;
+
+export abstract class Expression extends ASTNode {
+  abstract acknowledge<T>(examiner: ExpressionExaminer<T>): T;
+}
+
 export class Binary extends Expression {
-  accept<T>(worker: ExpressionWorker<T>) {
-    return worker.examineBinary(this);
+  acknowledge<T>(examiner: ExpressionExaminer<T>) {
+    return examiner.examineBinary(this);
   }
   constructor(
     public operator: lox.Token,
@@ -24,8 +29,8 @@ export class Binary extends Expression {
 }
 
 export class Parenthesized extends Expression {
-  accept<T>(worker: ExpressionWorker<T>) {
-    return worker.examineParenthesized(this);
+  acknowledge<T>(examiner: ExpressionExaminer<T>) {
+    return examiner.examineParenthesized(this);
   }
   constructor(public expression: Expression) {
     super();
@@ -36,8 +41,8 @@ export class Parenthesized extends Expression {
 }
 
 export class Unary extends Expression {
-  accept<T>(worker: ExpressionWorker<T>) {
-    return worker.examineUnary(this);
+  acknowledge<T>(examiner: ExpressionExaminer<T>) {
+    return examiner.examineUnary(this);
   }
   constructor(
     public operator: lox.Token,
@@ -51,8 +56,8 @@ export class Unary extends Expression {
 }
 
 export class Literal extends Expression {
-  accept<T>(worker: ExpressionWorker<T>) {
-    return worker.examineLiteral(this);
+  acknowledge<T>(examiner: ExpressionExaminer<T>) {
+    return examiner.examineLiteral(this);
   }
   constructor(public value: lox.Value) {
     super();
@@ -62,9 +67,9 @@ export class Literal extends Expression {
   }
 }
 
-export abstract class ExpressionWorker<T> {
-  examine(expression: Expression): T {
-    return expression.accept(this);
+export abstract class ExpressionExaminer<T> {
+  examine(expr: Expression): T {
+    return expr.acknowledge(this);
   }
   abstract examineBinary(expression: Binary): T;
   abstract examineParenthesized(expression: Parenthesized): T;
