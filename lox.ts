@@ -1,7 +1,6 @@
 import { scanner } from "./scanner";
 import { parser } from "./parser";
 import { evaluator } from "./evaluator";
-import { Expression } from "./expression";
 
 async function main(args: string[]) {
   if (args.length === 1) {

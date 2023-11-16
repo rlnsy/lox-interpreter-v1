@@ -1,10 +1,4 @@
-import {
-  Expression,
-  Unary,
-  Binary,
-  Parenthesized,
-  Literal,
-} from "./expression";
+import { Expression, Unary, Binary, Parenthesized, Literal } from "./ast";
 import { asNotUndefined } from "./util";
 
 export class ParseError extends Error {}

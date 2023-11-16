@@ -5,7 +5,7 @@ import {
   Literal,
   Parenthesized,
   Unary,
-} from "./expression";
+} from "./ast";
 
 function isNumber(value: lox.Value): value is number {
   return typeof value === "number" && !isNaN(value);

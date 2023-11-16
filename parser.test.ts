@@ -1,6 +1,6 @@
 import { describe, test, expect, mock } from "bun:test";
 import { parser } from "./parser";
-import { Literal, Parenthesized, Unary, Binary } from "./expression";
+import { Literal, Parenthesized, Unary, Binary } from "./ast";
 import { EOF } from "./scanner";
 
 describe("parse", () => {

@@ -1,11 +1,5 @@
 import { describe, test, expect, mock } from "bun:test";
-import {
-  Expression,
-  Literal,
-  Unary,
-  Parenthesized,
-  Binary,
-} from "./expression";
+import { Expression, Literal, Unary, Parenthesized, Binary } from "./ast";
 import { evaluator } from "./evaluator";
 
 describe("evaluator", () => {
