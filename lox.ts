@@ -1,7 +1,6 @@
 import { scanner } from "./scanner";
 import { parser } from "./parser";
-import { evaluator } from "./evaluator";
-import { stringify } from "./stringify";
+import { interpreter } from "./interpreter";
 
 async function main(args: string[]) {
   if (args.length === 1) {
@@ -120,9 +119,8 @@ function run(source: string): [boolean, boolean] {
   if (hasError) return [true, false];
   const ast = parser.parse(tokens, error);
   if (hasError || ast == null) return [true, false];
-  const result = evaluator.evaluate(ast, runtimeError);
+  interpreter.execute(ast, runtimeError);
   if (hasRuntimeError) return [false, true];
-  Bun.write(Bun.stdout, stringify(result));
   return [hasError, hasRuntimeError];
 }
 

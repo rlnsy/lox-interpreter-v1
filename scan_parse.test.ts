@@ -4,10 +4,11 @@ import { parser } from "./parser";
 
 describe("scan ==> parse", () => {
   function execute(source: string, error: unknown) {
-    return `${parser.parse(
+    const program = parser.parse(
       scanner.scanTokens(source, error as lox.ErrorHandler),
       error as lox.ErrorHandler,
-    )}`;
+    );
+    return program == null ? "ERROR" : `[${program.join(" ; ")}]`;
   }
   function run_test(
     input: string,
@@ -30,47 +31,66 @@ describe("scan ==> parse", () => {
       fn(errors);
     });
   }
-  run_test("1 == 1", (result, error) => {
-    expect(error).not.toHaveBeenCalled();
-    expect(result).toEqual("[binary: == [literal: 1] [literal: 1]]");
-  });
-  run_test("1 != 2", (result, error) => {
-    expect(error).not.toHaveBeenCalled();
-    expect(result).toEqual("[binary: != [literal: 1] [literal: 2]]");
-  });
-  run_test("!(1 == 2)", (result, error) => {
+  run_test("1 == 1;", (result, error) => {
     expect(error).not.toHaveBeenCalled();
     expect(result).toEqual(
-      "[unary: ! [group: [binary: == [literal: 1] [literal: 2]]]]",
+      "[[express [binary: == [literal: 1] [literal: 1]]]]",
     );
   });
-  run_test("1 < 1 == false", (result, error) => {
+  run_test("1 != 2;", (result, error) => {
     expect(error).not.toHaveBeenCalled();
     expect(result).toEqual(
-      "[binary: == [binary: < [literal: 1] [literal: 1]] [literal: false]]",
+      "[[express [binary: != [literal: 1] [literal: 2]]]]",
     );
   });
-  run_test("---1", (result, error) => {
-    expect(error).not.toHaveBeenCalled();
-    expect(result).toEqual("[unary: - [unary: - [unary: - [literal: 1]]]]");
-  });
-  run_test("1 * 2 * 3 * 4", (result, error) => {
+  run_test("!(1 == 2);", (result, error) => {
     expect(error).not.toHaveBeenCalled();
     expect(result).toEqual(
-      "[binary: * [binary: * [binary: * [literal: 1] [literal: 2]] [literal: 3]] [literal: 4]]",
+      "[[express [unary: ! [group: [binary: == [literal: 1] [literal: 2]]]]]]",
     );
   });
-  run_test("1 + 2 + 3 + 4", (result, error) => {
+  run_test("1 < 1 == false;", (result, error) => {
     expect(error).not.toHaveBeenCalled();
     expect(result).toEqual(
-      "[binary: + [binary: + [binary: + [literal: 1] [literal: 2]] [literal: 3]] [literal: 4]]",
+      "[[express [binary: == [binary: < [literal: 1] [literal: 1]] [literal: false]]]]",
     );
   });
-  run_test("1 + 2 * 3 + 4", (result, error) => {
+  run_test("---1;", (result, error) => {
     expect(error).not.toHaveBeenCalled();
     expect(result).toEqual(
-      "[binary: + [binary: + [literal: 1] [binary: * [literal: 2] [literal: 3]]] [literal: 4]]",
+      "[[express [unary: - [unary: - [unary: - [literal: 1]]]]]]",
     );
+  });
+  run_test("1 * 2 * 3 * 4;", (result, error) => {
+    expect(error).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      "[[express [binary: * [binary: * [binary: * [literal: 1] [literal: 2]] [literal: 3]] [literal: 4]]]]",
+    );
+  });
+  run_test("1 + 2 + 3 + 4;", (result, error) => {
+    expect(error).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      "[[express [binary: + [binary: + [binary: + [literal: 1] [literal: 2]] [literal: 3]] [literal: 4]]]]",
+    );
+  });
+  run_test("1 + 2 * 3 + 4;", (result, error) => {
+    expect(error).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      "[[express [binary: + [binary: + [literal: 1] [binary: * [literal: 2] [literal: 3]]] [literal: 4]]]]",
+    );
+  });
+  error_test("1 + 1", (errors) => {
+    expect(errors).toEqual([
+      {
+        message: "missing semicolon",
+        location: {
+          line: 1,
+          column: 0,
+          idx: 0,
+        },
+        label: "statement started here",
+      },
+    ]);
   });
   error_test("+", (errors) => {
     expect(errors).toEqual([
@@ -97,6 +117,19 @@ describe("scan ==> parse", () => {
       },
     ]);
   });
+  error_test("1 + ;", (errors) => {
+    expect(errors).toEqual([
+      {
+        message: "unexpected statement terminator while parsing expression",
+        label: "expression started here",
+        location: {
+          line: 1,
+          column: 0,
+          idx: 0,
+        },
+      },
+    ]);
+  });
   error_test("1 + (/)", (errors) => {
     expect(errors).toEqual([
       {
@@ -112,7 +145,7 @@ describe("scan ==> parse", () => {
   error_test("1234a", (errors) => {
     expect(errors).toEqual([
       {
-        message: "unexpected token: 'a'",
+        message: "expected semicolon to end statement but found 'a'",
         location: {
           line: 1,
           column: 4,

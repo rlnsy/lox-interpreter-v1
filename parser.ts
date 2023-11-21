@@ -5,6 +5,9 @@ import {
   Binary,
   Parenthesized,
   Literal,
+  ExpressionStatement,
+  PrintStatement,
+  Statement,
 } from "./ast";
 import { asNotUndefined } from "./util";
 
@@ -57,6 +60,7 @@ function parse(
     return isMatch;
   }
 
+  let startOfStatement: lox.Token = tokens[0];
   let startOfExpression: lox.Token = tokens[0];
 
   function expression() {
@@ -149,6 +153,13 @@ function parse(
         message: `expected start of expression but found '${peek().lexeme}'`,
         location: peek().start,
       });
+    } else if (peek().type === "SEMICOLON") {
+      throw error({
+        message: "unexpected statement terminator while parsing expression",
+
+        location: startOfExpression.start,
+        label: "expression started here",
+      });
     } else {
       throw error({
         message: `unexpected token '${peek().lexeme}'`,
@@ -157,15 +168,65 @@ function parse(
     }
   }
 
-  try {
+  function checkStatementTermination() {
+    if (!match("SEMICOLON")) {
+      // TODO: improve error by keeping track of end of tokens
+      if (!isAtEnd()) {
+        throw error({
+          message: `expected semicolon to end statement but found '${
+            peek().lexeme
+          }'`,
+          location: peek().start,
+        });
+      } else {
+        throw error({
+          message: "missing semicolon",
+          location: startOfStatement.start,
+          label: "statement started here",
+        });
+      }
+    }
+  }
+
+  function expressionStatement() {
     const expr = expression();
+    checkStatementTermination();
+    return new ExpressionStatement(expr);
+  }
+
+  function printStatement() {
+    const expr = expression();
+    checkStatementTermination();
+    return new PrintStatement(expr);
+  }
+
+  function statement() {
+    if (!isAtEnd()) {
+      startOfStatement = peek();
+    }
+    if (match("PRINT")) {
+      return printStatement();
+    }
+    return expressionStatement();
+  }
+
+  function statements() {
+    const statements: Statement[] = [];
+    while (!isAtEnd()) {
+      statements.push(statement());
+    }
+    return statements;
+  }
+
+  try {
+    const program = statements();
     if (!isAtEnd()) {
       throw error({
         message: `unexpected token: '${peek().lexeme}'`,
         location: peek().start,
       });
     }
-    return expr;
+    return program;
   } catch (error) {
     if (error instanceof ParseError) {
       return null;

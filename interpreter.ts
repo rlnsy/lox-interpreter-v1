@@ -5,7 +5,13 @@ import {
   Parenthesized,
   Unary,
   ExpressionExaminer,
+  Expression,
+  StatementExaminer,
+  Statement,
+  ExpressionStatement,
+  PrintStatement,
 } from "./ast";
+import { stringify } from "./stringify";
 
 function isNumber(value: lox.Value): value is number {
   return typeof value === "number" && !isNaN(value);
@@ -50,29 +56,44 @@ function loxTypeOf(value: lox.Value) {
 const unreachable: lox.Value =
   "Look at you, sneaky weasel. You reached some unreachable code!";
 
-class Evaluator extends ExpressionExaminer<lox.Value> {
-  constructor(private error: lox.ErrorHandler) {
-    super();
-  }
-  evaluate(p: Program): lox.Value | null {
+class Evaluator
+  implements ExpressionExaminer<lox.Value>, StatementExaminer<void>
+{
+  constructor(private error: lox.ErrorHandler) {}
+  execute(p: Program): void {
     try {
-      return this.examine(p);
+      p.forEach((statement) => {
+        this.executeStatement(statement);
+      });
     } catch (error) {
       if (error instanceof EvaluationRuntimeError) {
         this.error({
           message: error.message,
           location: error.location,
         });
-        return null;
+      } else {
+        throw error;
       }
-      throw error;
     }
+  }
+  executeStatement(stmt: Statement) {
+    stmt.acknowledge(this);
+  }
+  evaluateExpression(expr: Expression): lox.Value {
+    return expr.acknowledge(this);
+  }
+  examineExpressionStatement(statement: ExpressionStatement) {
+    this.evaluateExpression(statement.expression);
+  }
+  examinePrint(statement: PrintStatement) {
+    const value = this.evaluateExpression(statement.expression);
+    Bun.write(Bun.stdout, stringify(value) + "\n");
   }
   examineLiteral(expression: Literal) {
     return expression.value;
   }
   examineUnary({ operator: op, operand: operandExpr }: Unary): lox.Value {
-    const operand = this.evaluate(operandExpr);
+    const operand = this.evaluateExpression(operandExpr);
     if (op.type === "MINUS") {
       if (!isNumber(operand)) {
         throw new Error();
@@ -84,11 +105,11 @@ class Evaluator extends ExpressionExaminer<lox.Value> {
     return unreachable;
   }
   examineParenthesized(expression: Parenthesized): lox.Value {
-    return this.evaluate(expression.expression);
+    return this.evaluateExpression(expression.expression);
   }
   examineBinary(expression: Binary): lox.Value {
-    const left = this.evaluate(expression.left);
-    const right = this.evaluate(expression.right);
+    const left = this.evaluateExpression(expression.left);
+    const right = this.evaluateExpression(expression.right);
     const op = expression.operator;
     if (op.type === "PLUS") {
       if (isNumber(left) && isNumber(right)) {
@@ -132,8 +153,11 @@ class Evaluator extends ExpressionExaminer<lox.Value> {
   }
 }
 
-export const evaluator = {
-  evaluate(p: Program, errorHandler: lox.ErrorHandler) {
-    return new Evaluator(errorHandler).evaluate(p);
+export const interpreter = {
+  evaluateExpression(e: Expression, errorHandler: lox.ErrorHandler) {
+    return new Evaluator(errorHandler).evaluateExpression(e);
+  },
+  execute(p: Program, errorHandler: lox.ErrorHandler) {
+    return new Evaluator(errorHandler).execute(p);
   },
 };

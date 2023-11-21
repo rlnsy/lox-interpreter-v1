@@ -1,8 +1,17 @@
 import { describe, test, expect, mock } from "bun:test";
-import { Program, Literal, Unary, Parenthesized, Binary } from "./ast";
-import { evaluator } from "./evaluator";
+import {
+  Program,
+  Literal,
+  Unary,
+  Parenthesized,
+  Binary,
+  Expression,
+  ExpressionStatement,
+  PrintStatement,
+} from "./ast";
+import { interpreter } from "./interpreter";
 
-describe("evaluator", () => {
+describe("interpreter", () => {
   const start: lox.Location = { line: 1, column: 0, idx: 0 }; // placeholder token location
   const ONE = new Literal(1);
   const ZERO = new Literal(0);
@@ -16,7 +25,7 @@ describe("evaluator", () => {
   const HELLO = new Literal("hello");
   const DIVIDE = { type: "SLASH", lexeme: "/", start } as const;
   const LESS = { type: "LESS", lexeme: "<", start } as const;
-  const cases: [Program, lox.Value][] = [
+  const cases: [Expression, lox.Value][] = [
     [ONE, 1],
     [HELLO, "hello"],
     [new Unary(MINUS, ONE), -1],
@@ -35,30 +44,48 @@ describe("evaluator", () => {
   cases.forEach(([input, expected]) => {
     test(`${input}`, () => {
       const error = mock(() => {});
-      const result = evaluator.evaluate(input, error);
+      const result = interpreter.evaluateExpression(input, error);
       expect(error).not.toHaveBeenCalled();
       expect(result).toEqual(expected);
     });
   });
+  test("expression statement", () => {
+    const write = mock(() => {});
+    const error = mock(() => {});
+    Bun.write = write as unknown as typeof Bun.write;
+    const input: Program = [new ExpressionStatement(new Literal(1))];
+    interpreter.execute(input, error);
+    expect(error).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+  });
+  test("print statement", () => {
+    const write = mock(() => {});
+    const error = mock(() => {});
+    Bun.write = write as unknown as typeof Bun.write;
+    const input: Program = [new PrintStatement(new Literal(1))];
+    interpreter.execute(input, error);
+    expect(error).not.toHaveBeenCalled();
+    expect(write).toHaveBeenCalled();
+  });
   const errorCases: [Program, lox.Error][] = [
     [
-      new Binary(DIVIDE, ONE, ZERO),
+      [new ExpressionStatement(new Binary(DIVIDE, ONE, ZERO))],
       { message: "divide by zero", location: start },
     ],
     [
-      new Binary(PLUS, ONE, HELLO),
+      [new ExpressionStatement(new Binary(PLUS, ONE, HELLO))],
       { message: "cannot add number and string", location: start },
     ],
     [
-      new Binary(MINUS, TWO, FALSE),
+      [new ExpressionStatement(new Binary(MINUS, TWO, FALSE))],
       { message: "RHS is not a number", location: start },
     ],
     [
-      new Binary(LESS, ONE, NIL),
+      [new ExpressionStatement(new Binary(LESS, ONE, NIL))],
       { message: "RHS is not a number", location: start },
     ],
     [
-      new Binary(DIVIDE, TRUE, TWO),
+      [new ExpressionStatement(new Binary(DIVIDE, TRUE, TWO))],
       { message: "LHS is not a number", location: start },
     ],
   ];
@@ -68,7 +95,7 @@ describe("evaluator", () => {
       const error = mock((err) => {
         errors.push(err);
       });
-      const result = evaluator.evaluate(input, error);
+      const result = interpreter.execute(input, error);
       expect(error).toHaveBeenCalled();
       expect(errors).toEqual([expected]);
     });
