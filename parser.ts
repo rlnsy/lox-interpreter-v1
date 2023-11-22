@@ -7,7 +7,9 @@ import {
   Literal,
   ExpressionStatement,
   PrintStatement,
-  Statement,
+  Declaration,
+  VariableDeclaration,
+  VariableReference,
 } from "./ast";
 import { asNotUndefined } from "./util";
 
@@ -17,10 +19,7 @@ export class ParseError extends Error {}
  * If a parse error occurs (a user syntax error was detected) then
  * the error handler will be called and null returned.
  */
-function parse(
-  tokens: lox.Token[],
-  errorHandler: lox.ErrorHandler,
-): Program | null {
+function parse(tokens: lox.Token[], errorHandler: lox.ErrorHandler): Program {
   let idx = 0;
 
   function error(err: lox.Error) {
@@ -38,6 +37,9 @@ function parse(
 
   // consumes the current token and returns it
   function advance() {
+    if (isAtEnd()) {
+      throw new Error("at EOF - cannot advance");
+    }
     const next = peek();
     idx++;
     return next;
@@ -129,6 +131,9 @@ function parse(
     if (match("NUMBER") || match("STRING")) {
       return new Literal(asNotUndefined(previous().literal));
     }
+    if (match("IDENTIFIER")) {
+      return new VariableReference(previous());
+    }
     if (match("LEFT_PAREN")) {
       const start = previous();
       const expr: Expression = expression();
@@ -210,29 +215,67 @@ function parse(
     return expressionStatement();
   }
 
-  function statements() {
-    const statements: Statement[] = [];
-    while (!isAtEnd()) {
-      statements.push(statement());
-    }
-    return statements;
-  }
-
-  try {
-    const program = statements();
-    if (!isAtEnd()) {
+  function declaration() {
+    if (!match("VAR")) return statement();
+    // variable declaration
+    if (!match("IDENTIFIER")) {
       throw error({
-        message: `unexpected token: '${peek().lexeme}'`,
+        message: `expected an identifier but found '${peek().lexeme}'`,
         location: peek().start,
       });
     }
-    return program;
-  } catch (error) {
-    if (error instanceof ParseError) {
-      return null;
+    const name = previous();
+    let initializer: Expression | undefined;
+    if (match("EQUAL")) {
+      initializer = expression();
     }
-    throw error;
+    checkStatementTermination();
+    return new VariableDeclaration(name, initializer);
   }
+
+  function synchronize() {
+    // After a semicolon, we’re probably finished with a statement.
+    // Most statements start with a keyword—for, if, return, var, etc.
+    // When the next token is any of those, we’re probably about to
+    // start a statement.
+    if (!isAtEnd()) {
+      advance();
+    }
+    while (!isAtEnd()) {
+      if (previous().type === "SEMICOLON") return;
+      switch (peek().type) {
+        case "VAR":
+        case "PRINT":
+          return;
+      }
+      advance();
+    }
+  }
+
+  function declarations() {
+    const decls: Declaration[] = [];
+    while (!isAtEnd()) {
+      try {
+        decls.push(declaration());
+      } catch (err) {
+        if (err instanceof ParseError) {
+          synchronize();
+        } else {
+          throw err;
+        }
+      }
+    }
+    return decls;
+  }
+
+  const program = declarations();
+  if (!isAtEnd()) {
+    throw error({
+      message: `unexpected token: '${peek().lexeme}'`,
+      location: peek().start,
+    });
+  }
+  return program;
 }
 
 export const parser = { parse };

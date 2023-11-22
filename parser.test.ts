@@ -2,14 +2,13 @@ import { describe, test, expect, mock } from "bun:test";
 import { parser } from "./parser";
 import {
   Program,
-  Statement,
   ExpressionStatement,
-  PrintStatement,
   Literal,
   Parenthesized,
   Unary,
   Binary,
   Expression,
+  Declaration,
 } from "./ast";
 import { EOF } from "./scanner";
 
@@ -21,7 +20,7 @@ describe("parse", () => {
     return program as Program;
   }
   function expectExpressionStatement(
-    s: Statement,
+    s: Declaration,
   ): asserts s is ExpressionStatement {
     expect(s).toBeInstanceOf(ExpressionStatement);
   }

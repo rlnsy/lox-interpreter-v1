@@ -118,7 +118,7 @@ function run(source: string): [boolean, boolean] {
   const tokens = scanner.scanTokens(source, error);
   if (hasError) return [true, false];
   const ast = parser.parse(tokens, error);
-  if (hasError || ast == null) return [true, false];
+  if (hasError) return [true, false];
   interpreter.execute(ast, runtimeError);
   if (hasRuntimeError) return [false, true];
   return [hasError, hasRuntimeError];

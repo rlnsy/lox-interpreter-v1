@@ -79,6 +79,14 @@ describe("scan ==> parse", () => {
       "[[express [binary: + [binary: + [literal: 1] [binary: * [literal: 2] [literal: 3]]] [literal: 4]]]]",
     );
   });
+  run_test("var a;", (result, error) => {
+    expect(error).not.toHaveBeenCalled();
+    expect(result).toEqual("[[var-decl a undefined]]");
+  });
+  run_test("var a = 1;", (result, error) => {
+    expect(error).not.toHaveBeenCalled();
+    expect(result).toEqual("[[var-decl a [literal: 1]]]");
+  });
   error_test("1 + 1", (errors) => {
     expect(errors).toEqual([
       {
@@ -300,6 +308,31 @@ describe("scan ==> parse", () => {
           line: 1,
           column: 5,
           idx: 5,
+        },
+      },
+    ]);
+  });
+  error_test("var a", (errors) => {
+    expect(errors).toEqual([
+      {
+        message: "missing semicolon",
+        location: {
+          line: 1,
+          column: 0,
+          idx: 0,
+        },
+        label: "statement started here",
+      },
+    ]);
+  });
+  error_test("var a = ;", (errors) => {
+    expect(errors).toEqual([
+      {
+        message: "expected start of expression but found ';'",
+        location: {
+          line: 1,
+          column: 8,
+          idx: 8,
         },
       },
     ]);

@@ -1,10 +1,10 @@
-export type Program = Statement[];
+export type Program = Declaration[];
 
-export abstract class Statement {
+export abstract class Declaration {
   abstract acknowledge<T>(examiner: StatementExaminer<T>): T;
 }
 
-export class ExpressionStatement extends Statement {
+export class ExpressionStatement extends Declaration {
   acknowledge<T>(examiner: StatementExaminer<T>): T {
     return examiner.examineExpressionStatement(this);
   }
@@ -17,7 +17,7 @@ export class ExpressionStatement extends Statement {
   }
 }
 
-export class PrintStatement extends Statement {
+export class PrintStatement extends Declaration {
   acknowledge<T>(examiner: StatementExaminer<T>): T {
     return examiner.examinePrint(this);
   }
@@ -29,9 +29,25 @@ export class PrintStatement extends Statement {
   }
 }
 
+export class VariableDeclaration extends Declaration {
+  acknowledge<T>(examiner: StatementExaminer<T>): T {
+    return examiner.examineVarDeclaration(this);
+  }
+  constructor(
+    public name: lox.Token,
+    public initializer?: Expression,
+  ) {
+    super();
+  }
+  toString(): string {
+    return `[var-decl ${this.name.lexeme} ${this.initializer}]`;
+  }
+}
+
 export interface StatementExaminer<T> {
   examineExpressionStatement(statement: ExpressionStatement): T;
   examinePrint(statement: PrintStatement): T;
+  examineVarDeclaration(decl: VariableDeclaration): T;
 }
 
 export abstract class Expression {
@@ -93,9 +109,22 @@ export class Literal extends Expression {
   }
 }
 
+export class VariableReference extends Expression {
+  acknowledge<T>(examiner: ExpressionExaminer<T>): T {
+    return examiner.examineVariableRef(this);
+  }
+  constructor(public name: lox.Token) {
+    super();
+  }
+  toString() {
+    return `[var-ref ${this.name}]`;
+  }
+}
+
 export interface ExpressionExaminer<T> {
   examineBinary(expression: Binary): T;
   examineParenthesized(expression: Parenthesized): T;
   examineUnary(expression: Unary): T;
   examineLiteral(expression: Literal): T;
+  examineVariableRef(expression: VariableReference): T;
 }

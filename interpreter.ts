@@ -7,9 +7,11 @@ import {
   ExpressionExaminer,
   Expression,
   StatementExaminer,
-  Statement,
   ExpressionStatement,
   PrintStatement,
+  VariableReference,
+  Declaration,
+  VariableDeclaration,
 } from "./ast";
 import { stringify } from "./stringify";
 
@@ -62,8 +64,8 @@ class Evaluator
   constructor(private error: lox.ErrorHandler) {}
   execute(p: Program): void {
     try {
-      p.forEach((statement) => {
-        this.executeStatement(statement);
+      p.forEach((decl) => {
+        this.executeDeclaration(decl);
       });
     } catch (error) {
       if (error instanceof EvaluationRuntimeError) {
@@ -76,8 +78,8 @@ class Evaluator
       }
     }
   }
-  executeStatement(stmt: Statement) {
-    stmt.acknowledge(this);
+  executeDeclaration(d: Declaration) {
+    d.acknowledge(this);
   }
   evaluateExpression(expr: Expression): lox.Value {
     return expr.acknowledge(this);
@@ -150,6 +152,26 @@ class Evaluator
       return left <= right;
     }
     return unreachable;
+  }
+
+  env = new Map<string, lox.Value>();
+
+  examineVariableRef(expression: VariableReference): lox.Value {
+    const value = this.env.get(expression.name.lexeme);
+    if (value === undefined) {
+      throw new EvaluationRuntimeError(
+        `variable '${expression.name.lexeme}' not defined`,
+        expression.name.start,
+      );
+    }
+    return value;
+  }
+
+  examineVarDeclaration(decl: VariableDeclaration): void {
+    const initialValue = decl.initializer
+      ? this.evaluateExpression(decl.initializer)
+      : null; // default to nil
+    this.env.set(decl.name.lexeme, initialValue);
   }
 }
 
