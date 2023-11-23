@@ -85,3 +85,25 @@ print "hi"
     expect(hasParseError).toBeTrue();
   },
 );
+
+run_test(
+  `
+	 var a = 1;
+	 a = 2;
+	 print a;
+`,
+  (output) => {
+    expect(output).toEqual(["2\n"]);
+  },
+);
+
+run_test(
+  `
+	 var a = 1;
+	 var b = (a = 2);
+	 print a + b;
+`,
+  (output) => {
+    expect(output).toEqual(["4\n"]);
+  },
+);

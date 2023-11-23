@@ -12,6 +12,7 @@ import {
   VariableReference,
   Declaration,
   VariableDeclaration,
+  Assignment,
 } from "./ast";
 import { stringify } from "./stringify";
 
@@ -183,6 +184,12 @@ class Evaluator
       ? this.evaluateExpression(decl.initializer)
       : null; // default to nil
     this.env.set(decl.name.lexeme, initialValue);
+  }
+
+  examineAssignment(expression: Assignment): lox.Value {
+    const value = this.evaluateExpression(expression.value);
+    this.env.set(expression.name.lexeme, value);
+    return value;
   }
 }
 

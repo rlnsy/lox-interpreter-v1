@@ -10,6 +10,7 @@ import {
   Declaration,
   VariableDeclaration,
   VariableReference,
+  Assignment,
 } from "./ast";
 import { asNotUndefined } from "./util";
 
@@ -69,7 +70,22 @@ function parse(tokens: lox.Token[], errorHandler: lox.ErrorHandler): Program {
     if (!isAtEnd()) {
       startOfExpression = peek();
     }
-    return equality();
+    return assignment();
+  }
+
+  function assignment(): Expression {
+    const l = equality();
+    if (match("EQUAL")) {
+      if (l instanceof VariableReference) {
+        const r = expression();
+        return new Assignment(l.name, r);
+      }
+      throw error({
+        message: "left side of assignment is invalid",
+        location: previous().start,
+      });
+    }
+    return l;
   }
 
   function equality() {

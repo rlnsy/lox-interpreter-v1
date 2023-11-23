@@ -121,10 +121,26 @@ export class VariableReference extends Expression {
   }
 }
 
+export class Assignment extends Expression {
+  acknowledge<T>(examiner: ExpressionExaminer<T>): T {
+    return examiner.examineAssignment(this);
+  }
+  constructor(
+    public name: lox.Token,
+    public value: Expression,
+  ) {
+    super();
+  }
+  toString() {
+    return `[assign ${this.name} ${this.value}]`;
+  }
+}
+
 export interface ExpressionExaminer<T> {
   examineBinary(expression: Binary): T;
   examineParenthesized(expression: Parenthesized): T;
   examineUnary(expression: Unary): T;
   examineLiteral(expression: Literal): T;
   examineVariableRef(expression: VariableReference): T;
+  examineAssignment(expression: Assignment): T;
 }

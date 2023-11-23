@@ -8,7 +8,11 @@ varDeclaration → "var" IDENTIFIER ("=" expression )? ";"
 statement      → expression ";"
                   | "print" expression ";"
 
-expression     → equality
+expression     → assignment
+               | equality
+
+assignment     → IDENTIFIER "=" assignment
+
 equality       → comparison ( ("!=" | "==") comparison )*
 comparison     → term ( (">" | ">=" | "<" | "<=" ) term )*
 term           → factor ( ("-" | "+") factor )*
