@@ -1,6 +1,6 @@
 import { scanner } from "./scanner";
 import { parser } from "./parser";
-import { interpreter } from "./interpreter";
+import { Environment, interpreter } from "./interpreter";
 
 async function main(args: string[]) {
   if (args.length === 1) {
@@ -28,29 +28,24 @@ async function file(name: string) {
 }
 
 async function repl() {
+  const env = new Environment();
   const prompt = "\n> ";
   const utf8Decoder = new TextDecoder();
   Bun.write(Bun.stdout, "Welcome to Lox!" + prompt);
   for await (const chunk of Bun.stdin.stream()) {
-    run(utf8Decoder.decode(chunk));
+    run(utf8Decoder.decode(chunk), env);
     Bun.write(Bun.stdout, prompt);
   }
 }
 
 async function evaluate(source: string) {
-  const [hadError, hadRuntimeError] = run(source);
+  const [hadError, hadRuntimeError] = run(source, new Environment());
   if (hadError) {
     process.exit(65);
   } else if (hadRuntimeError) {
     process.exit(70);
   }
 }
-
-type RunError = {
-  message: string;
-  line: number;
-  column: number;
-};
 
 function createErrorReport(
   message: string,
@@ -81,7 +76,7 @@ function report(...args: Parameters<typeof createErrorReport>) {
  * Run a program from its source code string representation.
  * Return true if there was an error running the program.
  */
-function run(source: string): [boolean, boolean] {
+function run(source: string, env: Environment): [boolean, boolean] {
   let hasError = false;
   let hasRuntimeError = false;
   function getLineContent(idx: number): string {
@@ -119,7 +114,7 @@ function run(source: string): [boolean, boolean] {
   if (hasError) return [true, false];
   const ast = parser.parse(tokens, error);
   if (hasError) return [true, false];
-  interpreter.execute(ast, runtimeError);
+  interpreter.execute(ast, runtimeError, env);
   if (hasRuntimeError) return [false, true];
   return [hasError, hasRuntimeError];
 }

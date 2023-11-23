@@ -9,7 +9,7 @@ import {
   ExpressionStatement,
   PrintStatement,
 } from "./ast";
-import { interpreter } from "./interpreter";
+import { Environment, interpreter } from "./interpreter";
 
 describe("interpreter", () => {
   const start: lox.Location = { line: 1, column: 0, idx: 0 }; // placeholder token location
@@ -44,7 +44,11 @@ describe("interpreter", () => {
   cases.forEach(([input, expected]) => {
     test(`${input}`, () => {
       const error = mock(() => {});
-      const result = interpreter.evaluateExpression(input, error);
+      const result = interpreter.evaluateExpression(
+        input,
+        error,
+        new Environment(),
+      );
       expect(error).not.toHaveBeenCalled();
       expect(result).toEqual(expected);
     });
@@ -54,7 +58,7 @@ describe("interpreter", () => {
     const error = mock(() => {});
     Bun.write = write as unknown as typeof Bun.write;
     const input: Program = [new ExpressionStatement(new Literal(1))];
-    interpreter.execute(input, error);
+    interpreter.execute(input, error, new Environment());
     expect(error).not.toHaveBeenCalled();
     expect(write).not.toHaveBeenCalled();
   });
@@ -63,7 +67,7 @@ describe("interpreter", () => {
     const error = mock(() => {});
     Bun.write = write as unknown as typeof Bun.write;
     const input: Program = [new PrintStatement(new Literal(1))];
-    interpreter.execute(input, error);
+    interpreter.execute(input, error, new Environment());
     expect(error).not.toHaveBeenCalled();
     expect(write).toHaveBeenCalled();
   });
@@ -95,7 +99,7 @@ describe("interpreter", () => {
       const error = mock((err) => {
         errors.push(err);
       });
-      const result = interpreter.execute(input, error);
+      const result = interpreter.execute(input, error, new Environment());
       expect(error).toHaveBeenCalled();
       expect(errors).toEqual([expected]);
     });

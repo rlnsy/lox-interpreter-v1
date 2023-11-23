@@ -1,7 +1,7 @@
 import { test, expect } from "bun:test";
 import { scanner } from "./scanner";
 import { parser } from "./parser";
-import { interpreter } from "./interpreter";
+import { Environment, interpreter } from "./interpreter";
 
 function expectNotNull<T>(value: T | null): asserts value is T {
   expect(value).not.toBeNull();
@@ -34,9 +34,13 @@ function run(
       hasParseError = true;
     });
     if (hasParseError) return next();
-    interpreter.execute(ast, () => {
-      hasRunError = true;
-    });
+    interpreter.execute(
+      ast,
+      () => {
+        hasRunError = true;
+      },
+      new Environment(),
+    );
     next();
   });
 }

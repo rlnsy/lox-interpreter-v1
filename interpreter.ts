@@ -58,10 +58,23 @@ function loxTypeOf(value: lox.Value) {
 const unreachable: lox.Value =
   "Look at you, sneaky weasel. You reached some unreachable code!";
 
+export class Environment {
+  env = new Map<string, lox.Value>();
+  set(name: string, value: lox.Value): void {
+    this.env.set(name, value);
+  }
+  get(name: string): lox.Value | undefined {
+    return this.env.get(name);
+  }
+}
+
 class Evaluator
   implements ExpressionExaminer<lox.Value>, StatementExaminer<void>
 {
-  constructor(private error: lox.ErrorHandler) {}
+  constructor(
+    private error: lox.ErrorHandler,
+    private env: Environment,
+  ) {}
   execute(p: Program): void {
     try {
       p.forEach((decl) => {
@@ -154,8 +167,6 @@ class Evaluator
     return unreachable;
   }
 
-  env = new Map<string, lox.Value>();
-
   examineVariableRef(expression: VariableReference): lox.Value {
     const value = this.env.get(expression.name.lexeme);
     if (value === undefined) {
@@ -176,10 +187,14 @@ class Evaluator
 }
 
 export const interpreter = {
-  evaluateExpression(e: Expression, errorHandler: lox.ErrorHandler) {
-    return new Evaluator(errorHandler).evaluateExpression(e);
+  evaluateExpression(
+    e: Expression,
+    errorHandler: lox.ErrorHandler,
+    env: Environment,
+  ) {
+    return new Evaluator(errorHandler, env).evaluateExpression(e);
   },
-  execute(p: Program, errorHandler: lox.ErrorHandler) {
-    return new Evaluator(errorHandler).execute(p);
+  execute(p: Program, errorHandler: lox.ErrorHandler, env: Environment) {
+    return new Evaluator(errorHandler, env).execute(p);
   },
 };
