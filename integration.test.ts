@@ -117,3 +117,12 @@ print a;
     expect(hasRunError).toBeTrue();
   },
 );
+
+run(
+  `
+-true;
+    `,
+  (output, { hasRunError }) => {
+    expect(hasRunError).toBeTrue();
+  },
+);

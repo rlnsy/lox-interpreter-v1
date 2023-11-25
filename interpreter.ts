@@ -115,7 +115,10 @@ class Evaluator
     const operand = this.evaluateExpression(operandExpr);
     if (op.type === "MINUS") {
       if (!isNumber(operand)) {
-        throw new Error();
+        throw new EvaluationRuntimeError(
+          "cannot negate non number value",
+          op.start,
+        );
       }
       return -operand;
     } else if (op.type === "BANG") {
