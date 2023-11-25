@@ -6,7 +6,7 @@ import {
   Unary,
   ExpressionExaminer,
   Expression,
-  StatementExaminer,
+  DeclarationExaminer,
   ExpressionStatement,
   PrintStatement,
   VariableReference,
@@ -73,7 +73,7 @@ export class Environment {
 }
 
 class Evaluator
-  implements ExpressionExaminer<lox.Value>, StatementExaminer<void>
+  implements ExpressionExaminer<lox.Value>, DeclarationExaminer<void>
 {
   constructor(
     private error: lox.ErrorHandler,

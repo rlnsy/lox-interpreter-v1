@@ -7,6 +7,9 @@ varDeclaration → "var" IDENTIFIER ("=" expression )? ";"
 
 statement      → expression ";"
                   | "print" expression ";"
+		  | block
+
+block          → "{" declaration "}"
 
 expression     → assignment
                | equality

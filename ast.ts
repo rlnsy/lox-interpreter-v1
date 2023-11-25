@@ -1,11 +1,13 @@
 export type Program = Declaration[];
 
 export abstract class Declaration {
-  abstract acknowledge<T>(examiner: StatementExaminer<T>): T;
+  abstract acknowledge<T>(examiner: DeclarationExaminer<T>): T;
 }
 
-export class ExpressionStatement extends Declaration {
-  acknowledge<T>(examiner: StatementExaminer<T>): T {
+export abstract class Statement extends Declaration {}
+
+export class ExpressionStatement extends Statement {
+  acknowledge<T>(examiner: DeclarationExaminer<T>): T {
     return examiner.examineExpressionStatement(this);
   }
   constructor(public expression: Expression) {
@@ -17,8 +19,8 @@ export class ExpressionStatement extends Declaration {
   }
 }
 
-export class PrintStatement extends Declaration {
-  acknowledge<T>(examiner: StatementExaminer<T>): T {
+export class PrintStatement extends Statement {
+  acknowledge<T>(examiner: DeclarationExaminer<T>): T {
     return examiner.examinePrint(this);
   }
   constructor(public expression: Expression) {
@@ -30,7 +32,7 @@ export class PrintStatement extends Declaration {
 }
 
 export class VariableDeclaration extends Declaration {
-  acknowledge<T>(examiner: StatementExaminer<T>): T {
+  acknowledge<T>(examiner: DeclarationExaminer<T>): T {
     return examiner.examineVarDeclaration(this);
   }
   constructor(
@@ -44,7 +46,7 @@ export class VariableDeclaration extends Declaration {
   }
 }
 
-export interface StatementExaminer<T> {
+export interface DeclarationExaminer<T> {
   examineExpressionStatement(statement: ExpressionStatement): T;
   examinePrint(statement: PrintStatement): T;
   examineVarDeclaration(decl: VariableDeclaration): T;
