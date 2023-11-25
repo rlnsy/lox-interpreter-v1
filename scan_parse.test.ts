@@ -337,4 +337,21 @@ describe("scan ==> parse", () => {
       },
     ]);
   });
+  error_test("{ print 1; ", (errors) => {
+    expect(errors).toEqual([
+      {
+        message: "expected closing '}' but found 'EOF'",
+        location: {
+          line: 1,
+          column: 0,
+          idx: 0,
+        },
+        label: "opened here",
+      },
+    ]);
+  });
+  run_test("{ print 1; }", (result, error) => {
+    expect(error).not.toHaveBeenCalled();
+    expect(result).toEqual("[[block [print [literal: 1]]]]");
+  });
 });

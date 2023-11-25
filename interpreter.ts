@@ -13,6 +13,7 @@ import {
   Declaration,
   VariableDeclaration,
   Assignment,
+  Block,
 } from "./ast";
 import { stringify } from "./stringify";
 
@@ -61,14 +62,29 @@ const unreachable: lox.Value =
 
 export class Environment {
   env = new Map<string, lox.Value>();
-  set(name: string, value: lox.Value): void {
+  constructor(private outer?: Environment) {}
+  initialize(name: string, value: lox.Value): void {
     this.env.set(name, value);
   }
-  get(name: string): lox.Value | undefined {
+  reassign(name: string, value: lox.Value) {
+    if (this.outer && this.outer.isDefined(name)) {
+      this.outer.reassign(name, value);
+    } else {
+      this.env.set(name, value);
+    }
+  }
+  getValue(name: string): lox.Value | undefined {
+    if (!this.env.has(name) && this.outer !== undefined) {
+      console.log("looking up in outer");
+      return this.outer.getValue(name);
+    }
     return this.env.get(name);
   }
-  has(name: string) {
-    return this.env.has(name);
+  isDefined(name: string): boolean {
+    return (
+      this.env.has(name) ||
+      (this.outer !== undefined && this.outer.isDefined(name))
+    );
   }
 }
 
@@ -175,7 +191,7 @@ class Evaluator
   }
 
   examineVariableRef(expression: VariableReference): lox.Value {
-    const value = this.env.get(expression.name.lexeme);
+    const value = this.env.getValue(expression.name.lexeme);
     if (value === undefined) {
       throw new EvaluationRuntimeError(
         `variable '${expression.name.lexeme}' not defined`,
@@ -189,20 +205,36 @@ class Evaluator
     const initialValue = decl.initializer
       ? this.evaluateExpression(decl.initializer)
       : null; // default to nil
-    this.env.set(decl.name.lexeme, initialValue);
+    this.env.initialize(decl.name.lexeme, initialValue);
   }
 
   examineAssignment(expression: Assignment): lox.Value {
     const value = this.evaluateExpression(expression.value);
     const name = expression.name.lexeme;
-    if (!this.env.has(name)) {
+    if (!this.env.isDefined(name)) {
       throw new EvaluationRuntimeError(
         `cannot reassign variable '${name}' before creation`,
         expression.name.start,
       );
     }
-    this.env.set(expression.name.lexeme, value);
+    this.env.reassign(expression.name.lexeme, value);
     return value;
+  }
+
+  examineBlock(b: Block): void {
+    this.executeBlock(b.statements, new Environment(this.env));
+  }
+
+  executeBlock(statements: Declaration[], env: Environment) {
+    const outer = this.env;
+    try {
+      this.env = env; // inner
+      statements.forEach((s) => {
+        this.executeDeclaration(s);
+      });
+    } finally {
+      this.env = outer;
+    }
   }
 }
 

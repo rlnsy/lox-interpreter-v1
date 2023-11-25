@@ -126,3 +126,44 @@ run(
     expect(hasRunError).toBeTrue();
   },
 );
+
+run_test(
+  `
+ { print "hello"; }
+ `,
+  (output) => {
+    expect(output).toEqual(["hello\n"]);
+  },
+);
+
+run_test(
+  `
+  var a = 1;
+ { print a; }
+ `,
+  (output) => {
+    expect(output).toEqual(["1\n"]);
+  },
+);
+
+run_test(
+  `
+  var a = 1;
+ { var a = 2; print a; }
+ print a;
+ `,
+  (output) => {
+    expect(output).toEqual(["2\n", "1\n"]);
+  },
+);
+
+run_test(
+  `
+  var a = 1;
+ { a = 2; print a; }
+ print a;
+ `,
+  (output) => {
+    expect(output).toEqual(["2\n", "2\n"]);
+  },
+);

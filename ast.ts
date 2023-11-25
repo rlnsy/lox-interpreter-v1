@@ -46,10 +46,23 @@ export class VariableDeclaration extends Declaration {
   }
 }
 
+export class Block extends Statement {
+  acknowledge<T>(examiner: DeclarationExaminer<T>): T {
+    return examiner.examineBlock(this);
+  }
+  constructor(public statements: Declaration[]) {
+    super();
+  }
+  toString(): string {
+    return `[block ${this.statements.map((s) => s.toString()).join(" ")}]`;
+  }
+}
+
 export interface DeclarationExaminer<T> {
   examineExpressionStatement(statement: ExpressionStatement): T;
   examinePrint(statement: PrintStatement): T;
   examineVarDeclaration(decl: VariableDeclaration): T;
+  examineBlock(b: Block): T;
 }
 
 export abstract class Expression {

@@ -11,6 +11,7 @@ import {
   VariableDeclaration,
   VariableReference,
   Assignment,
+  Block,
 } from "./ast";
 import { asNotUndefined } from "./util";
 
@@ -221,12 +222,30 @@ function parse(tokens: lox.Token[], errorHandler: lox.ErrorHandler): Program {
     return new PrintStatement(expr);
   }
 
+  function block() {
+    const start = previous();
+    const statements: Declaration[] = [];
+    while (!isAtEnd() && !check("RIGHT_BRACE")) {
+      statements.push(declaration());
+    }
+    if (!match("RIGHT_BRACE")) {
+      throw error({
+        message: `expected closing '}' but found '${peek().lexeme ?? "EOF"}'`,
+        location: start.start,
+        label: "opened here",
+      });
+    }
+    return statements;
+  }
+
   function statement() {
     if (!isAtEnd()) {
       startOfStatement = peek();
     }
     if (match("PRINT")) {
       return printStatement();
+    } else if (match("LEFT_BRACE")) {
+      return new Block(block());
     }
     return expressionStatement();
   }
