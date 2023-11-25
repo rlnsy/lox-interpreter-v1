@@ -107,3 +107,13 @@ run_test(
     expect(output).toEqual(["4\n"]);
   },
 );
+
+run(
+  `
+a = 1;
+print a;
+    `,
+  (output, { hasRunError }) => {
+    expect(hasRunError).toBeTrue();
+  },
+);

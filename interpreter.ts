@@ -67,6 +67,9 @@ export class Environment {
   get(name: string): lox.Value | undefined {
     return this.env.get(name);
   }
+  has(name: string) {
+    return this.env.has(name);
+  }
 }
 
 class Evaluator
@@ -188,6 +191,13 @@ class Evaluator
 
   examineAssignment(expression: Assignment): lox.Value {
     const value = this.evaluateExpression(expression.value);
+    const name = expression.name.lexeme;
+    if (!this.env.has(name)) {
+      throw new EvaluationRuntimeError(
+        `cannot reassign variable '${name}' before creation`,
+        expression.name.start,
+      );
+    }
     this.env.set(expression.name.lexeme, value);
     return value;
   }
