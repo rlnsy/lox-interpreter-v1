@@ -10,6 +10,9 @@
     "typescript": "^5.0.0"
   },
   "scripts": {
-    "build": "tsc && bun test"
+    "build": "tsc && bun test",
+    "test": "bun test",
+    "repl": "bun run main.ts",
+    "file": "bun run main.ts"
   }
 }
