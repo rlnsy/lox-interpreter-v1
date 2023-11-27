@@ -25,11 +25,8 @@ function isString(value: lox.Value): value is string {
   return typeof value === "string";
 }
 
-class EvaluationRuntimeError extends Error {
-  constructor(
-    public message: string,
-    public location: lox.Location,
-  ) {
+export class EvaluationRuntimeError extends Error {
+  constructor(public error: lox.Error) {
     super();
   }
 }
@@ -40,10 +37,10 @@ function checkNumber(
   errorLocation: lox.Location,
 ): asserts value is number {
   if (!isNumber(value)) {
-    throw new EvaluationRuntimeError(
-      `${errorLabel} is not a number`,
-      errorLocation,
-    );
+    throw new EvaluationRuntimeError({
+      message: `${errorLabel} is not a number`,
+      location: errorLocation,
+    });
   }
 }
 
@@ -103,8 +100,8 @@ class Evaluator
     } catch (error) {
       if (error instanceof EvaluationRuntimeError) {
         this.error({
-          message: error.message,
-          location: error.location,
+          message: error.error.message,
+          location: error.error.location,
         });
       } else {
         throw error;
@@ -131,10 +128,10 @@ class Evaluator
     const operand = this.evaluateExpression(operandExpr);
     if (op.type === "MINUS") {
       if (!isNumber(operand)) {
-        throw new EvaluationRuntimeError(
-          "cannot negate non number value",
-          op.start,
-        );
+        throw new EvaluationRuntimeError({
+          message: "cannot negate non number value",
+          location: op.start,
+        });
       }
       return -operand;
     } else if (op.type === "BANG") {
@@ -155,17 +152,20 @@ class Evaluator
       } else if (isString(left) && isString(right)) {
         return `${left}${right}`;
       }
-      throw new EvaluationRuntimeError(
-        `cannot add ${loxTypeOf(left)} and ${loxTypeOf(right)}`,
-        op.start,
-      );
+      throw new EvaluationRuntimeError({
+        message: `cannot add ${loxTypeOf(left)} and ${loxTypeOf(right)}`,
+        location: op.start,
+      });
     } else if (op.type === "MINUS") {
       checkNumber(left, "LHS", op.start), checkNumber(right, "RHS", op.start);
       return left - right;
     } else if (op.type === "SLASH") {
       checkNumber(left, "LHS", op.start), checkNumber(right, "RHS", op.start);
       if (right === 0)
-        throw new EvaluationRuntimeError("divide by zero", op.start);
+        throw new EvaluationRuntimeError({
+          message: "divide by zero",
+          location: op.start,
+        });
       return left / right;
     } else if (op.type === "STAR") {
       checkNumber(left, "LHS", op.start), checkNumber(right, "RHS", op.start);
@@ -193,10 +193,10 @@ class Evaluator
   examineVariableRef(expression: VariableReference): lox.Value {
     const value = this.env.getValue(expression.name.lexeme);
     if (value === undefined) {
-      throw new EvaluationRuntimeError(
-        `variable '${expression.name.lexeme}' not defined`,
-        expression.name.start,
-      );
+      throw new EvaluationRuntimeError({
+        message: `variable '${expression.name.lexeme}' not defined`,
+        location: expression.name.start,
+      });
     }
     return value;
   }
@@ -212,10 +212,10 @@ class Evaluator
     const value = this.evaluateExpression(expression.value);
     const name = expression.name.lexeme;
     if (!this.env.isDefined(name)) {
-      throw new EvaluationRuntimeError(
-        `cannot reassign variable '${name}' before creation`,
-        expression.name.start,
-      );
+      throw new EvaluationRuntimeError({
+        message: `cannot reassign variable '${name}' before creation`,
+        location: expression.name.start,
+      });
     }
     this.env.reassign(expression.name.lexeme, value);
     return value;
@@ -239,12 +239,8 @@ class Evaluator
 }
 
 export const interpreter = {
-  evaluateExpression(
-    e: Expression,
-    errorHandler: lox.ErrorHandler,
-    env: Environment,
-  ) {
-    return new Evaluator(errorHandler, env).evaluateExpression(e);
+  evaluateExpression(e: Expression, env: Environment) {
+    return new Evaluator(() => {}, env).evaluateExpression(e);
   },
   execute(p: Program, errorHandler: lox.ErrorHandler, env: Environment) {
     return new Evaluator(errorHandler, env).execute(p);

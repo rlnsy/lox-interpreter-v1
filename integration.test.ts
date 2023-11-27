@@ -2,6 +2,7 @@ import { test, expect } from "bun:test";
 import { scanner } from "./scanner";
 import { parser } from "./parser";
 import { Environment, interpreter } from "./interpreter";
+import { Expression, Program } from "./ast";
 
 function expectNotNull<T>(value: T | null): asserts value is T {
   expect(value).not.toBeNull();
@@ -33,6 +34,9 @@ function run(
     const ast = parser.parse(tokens, () => {
       hasParseError = true;
     });
+    if (ast instanceof Expression) {
+      throw new Error("parsed an expression, not a program");
+    }
     if (hasParseError) return next();
     interpreter.execute(
       ast,

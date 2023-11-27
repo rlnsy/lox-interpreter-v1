@@ -13,6 +13,7 @@
     "build": "tsc && bun test",
     "test": "bun test",
     "repl": "bun run main.ts",
+    "eval": "bun run main.ts eval",
     "file": "bun run main.ts"
   }
 }

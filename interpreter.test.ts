@@ -43,13 +43,7 @@ describe("interpreter", () => {
   ];
   cases.forEach(([input, expected]) => {
     test(`${input}`, () => {
-      const error = mock(() => {});
-      const result = interpreter.evaluateExpression(
-        input,
-        error,
-        new Environment(),
-      );
-      expect(error).not.toHaveBeenCalled();
+      const result = interpreter.evaluateExpression(input, new Environment());
       expect(result).toEqual(expected);
     });
   });

@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import { lox } from "./lox";
+import { Environment } from "./interpreter";
 
 describe("createErrorReport", () => {
   test("line 1 column 0", () => {
@@ -19,5 +20,73 @@ describe("createErrorReport", () => {
               ^-- here
 `,
     );
+  });
+});
+
+describe("run", () => {
+  function run(
+    input: string,
+    allowExpression: boolean,
+    fn: (output: string[], errors: [boolean, boolean]) => void,
+  ) {
+    const prints: string[] = [];
+    Bun.write = ((_: unknown, content: string) =>
+      prints.push(content)) as unknown as typeof Bun.write;
+    const errors = lox.run(input, new Environment(), allowExpression);
+    fn(prints, errors);
+  }
+  test("expression - allowed", () => {
+    run("1+1", true, (output, [error, runError]) => {
+      expect(output).toEqual(["2\n"]);
+      expect(error).toBeFalse;
+      expect(runError).toBeFalse;
+    });
+  });
+  test("expression - not allowed", () => {
+    run("1+1", false, (output, [error]) => {
+      expect(error).toBeTrue;
+      expect(output).toEqual([
+        `Error: missing semicolon
+    1 | 1+1
+        ^-- statement started here
+`,
+      ]);
+    });
+  });
+  test("statement - expression allowed", () => {
+    run("1+1;", true, (output, [error, runError]) => {
+      expect(output).toEqual([]);
+      expect(error).toBeFalse;
+      expect(runError).toBeFalse;
+    });
+  });
+  test("statement - expression not allowed", () => {
+    run("1+1;", false, (output, [error, runError]) => {
+      expect(output).toEqual([]);
+      expect(error).toBeFalse;
+      expect(runError).toBeFalse;
+    });
+  });
+  test("expression syntax error in statement", () => {
+    run("1+(;", false, (output, [error]) => {
+      expect(error).toBeTrue;
+      expect(output).toEqual([
+        `Error: expected start of expression but found ';'
+    1 | 1+(;
+           ^-- here
+`,
+      ]);
+    });
+  });
+  test("statment error", () => {
+    run("print ;", false, (output, [error]) => {
+      expect(error).toBeTrue;
+      expect(output).toEqual([
+        `Error: expected start of expression but found ';'
+    1 | print ;
+              ^-- here
+`,
+      ]);
+    });
   });
 });

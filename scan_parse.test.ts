@@ -1,6 +1,7 @@
 import { describe, test, expect, mock } from "bun:test";
 import { scanner } from "./scanner";
 import { parser } from "./parser";
+import { Expression } from "./ast";
 
 describe("scan ==> parse", () => {
   function execute(source: string, error: unknown) {
@@ -8,6 +9,9 @@ describe("scan ==> parse", () => {
       scanner.scanTokens(source, error as lox.ErrorHandler),
       error as lox.ErrorHandler,
     );
+    if (program instanceof Expression) {
+      return "EXPRESSION";
+    }
     return program == null ? "ERROR" : `[${program.join(" ; ")}]`;
   }
   function run_test(

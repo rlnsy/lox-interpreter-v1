@@ -15,222 +15,236 @@ import {
 } from "./ast";
 import { asNotUndefined } from "./util";
 
-export class ParseError extends Error {}
+export class ParseError extends Error {
+  constructor(public error: lox.Error) {
+    super();
+  }
+}
 
-/**
- * If a parse error occurs (a user syntax error was detected) then
- * the error handler will be called and null returned.
- */
-function parse(tokens: lox.Token[], errorHandler: lox.ErrorHandler): Program {
-  let idx = 0;
+class Parser {
+  private idx = 0;
+  private tokens: lox.Token[];
+  private errorHandler: lox.ErrorHandler;
+  private startOfStatement: lox.Token;
+  private startOfExpression: lox.Token;
 
-  function error(err: lox.Error) {
-    errorHandler(err);
-    return new ParseError();
+  constructor(tokens: lox.Token[], errorHandler: lox.ErrorHandler) {
+    this.tokens = tokens;
+    this.errorHandler = errorHandler;
+    this.startOfStatement = this.tokens[0];
+    this.startOfExpression = this.tokens[0];
   }
 
-  function peek() {
-    return tokens[idx];
+  error(err: lox.Error) {
+    this.errorHandler(err);
+    return new ParseError(err);
   }
 
-  function isAtEnd() {
-    return peek().type === "EOF";
+  peek() {
+    return this.tokens[this.idx];
+  }
+
+  isAtEnd() {
+    return this.peek().type === "EOF";
   }
 
   // consumes the current token and returns it
-  function advance() {
-    if (isAtEnd()) {
+  advance() {
+    if (this.isAtEnd()) {
       throw new Error("at EOF - cannot advance");
     }
-    const next = peek();
-    idx++;
+    const next = this.peek();
+    this.idx++;
     return next;
   }
 
-  function previous() {
-    return tokens[idx - 1];
+  previous() {
+    return this.tokens[this.idx - 1];
   }
 
   // returns true if the current token is of the given type
-  function check(type: lox.TokenType) {
-    return peek().type === type;
+  check(type: lox.TokenType) {
+    return this.peek().type === type;
   }
 
-  function match(...types: lox.TokenType[]): boolean {
-    const isMatch = types.some((type) => check(type));
+  match(...types: lox.TokenType[]): boolean {
+    const isMatch = types.some((type) => this.check(type));
     if (isMatch) {
-      advance();
+      this.advance();
     }
     return isMatch;
   }
 
-  let startOfStatement: lox.Token = tokens[0];
-  let startOfExpression: lox.Token = tokens[0];
-
-  function expression() {
-    if (!isAtEnd()) {
-      startOfExpression = peek();
+  expression() {
+    if (!this.isAtEnd()) {
+      this.startOfExpression = this.peek();
     }
-    return assignment();
+    return this.assignment();
   }
 
-  function assignment(): Expression {
-    const l = equality();
-    if (match("EQUAL")) {
+  assignment(): Expression {
+    const l = this.equality();
+    if (this.match("EQUAL")) {
       if (l instanceof VariableReference) {
-        const r = expression();
+        const r = this.expression();
         return new Assignment(l.name, r);
       }
-      throw error({
+      throw this.error({
         message: "left side of assignment is invalid",
-        location: previous().start,
+        location: this.previous().start,
       });
     }
     return l;
   }
 
-  function equality() {
-    let left = comparison();
-    while (match("BANG_EQUAL") || match("EQUAL_EQUAL")) {
-      const op = previous();
-      const right = comparison();
+  equality() {
+    let left = this.comparison();
+    while (this.match("BANG_EQUAL") || this.match("EQUAL_EQUAL")) {
+      const op = this.previous();
+      const right = this.comparison();
       left = new Binary(op, left, right);
     }
     return left;
   }
 
-  function comparison() {
-    let left = term();
+  comparison() {
+    let left = this.term();
     while (
-      match("GREATER") ||
-      match("GREATER_EQUAL") ||
-      match("LESS") ||
-      match("LESS_EQUAL")
+      this.match("GREATER") ||
+      this.match("GREATER_EQUAL") ||
+      this.match("LESS") ||
+      this.match("LESS_EQUAL")
     ) {
-      const op = previous();
-      const right = term();
+      const op = this.previous();
+      const right = this.term();
       left = new Binary(op, left, right);
     }
     return left;
   }
 
-  function term() {
-    let left = factor();
-    while (match("MINUS") || match("PLUS")) {
-      const op = previous();
-      const right = factor();
+  term() {
+    let left = this.factor();
+    while (this.match("MINUS") || this.match("PLUS")) {
+      const op = this.previous();
+      const right = this.factor();
       left = new Binary(op, left, right);
     }
     return left;
   }
 
-  function factor() {
-    let left = unary();
-    while (match("SLASH") || match("STAR")) {
-      const op = previous();
-      const right = unary();
+  factor() {
+    let left = this.unary();
+    while (this.match("SLASH") || this.match("STAR")) {
+      const op = this.previous();
+      const right = this.unary();
       left = new Binary(op, left, right);
     }
     return left;
   }
 
-  function unary(): Expression {
-    if (match("MINUS") || match("BANG")) {
-      return new Unary(previous(), unary());
+  unary(): Expression {
+    if (this.match("MINUS") || this.match("BANG")) {
+      return new Unary(this.previous(), this.unary());
     }
-    return primary();
+    return this.primary();
   }
 
-  function primary() {
-    if (match("TRUE")) return new Literal(true);
-    if (match("FALSE")) return new Literal(false);
-    if (match("NIL")) return new Literal(null);
-    if (match("NUMBER") || match("STRING")) {
-      return new Literal(asNotUndefined(previous().literal));
+  primary() {
+    if (this.match("TRUE")) return new Literal(true);
+    if (this.match("FALSE")) return new Literal(false);
+    if (this.match("NIL")) return new Literal(null);
+    if (this.match("NUMBER") || this.match("STRING")) {
+      return new Literal(asNotUndefined(this.previous().literal));
     }
-    if (match("IDENTIFIER")) {
-      return new VariableReference(previous());
+    if (this.match("IDENTIFIER")) {
+      return new VariableReference(this.previous());
     }
-    if (match("LEFT_PAREN")) {
-      const start = previous();
-      const expr: Expression = expression();
-      if (match("RIGHT_PAREN")) {
+    if (this.match("LEFT_PAREN")) {
+      const start = this.previous();
+      const expr: Expression = this.expression();
+      if (this.match("RIGHT_PAREN")) {
         return new Parenthesized(expr);
       } else {
-        throw error({
-          message: `expected closing ')' but found '${peek().lexeme ?? "EOF"}'`,
+        throw this.error({
+          message: `expected closing ')' but found '${
+            this.peek().lexeme ?? "EOF"
+          }'`,
           location: start.start,
           label: "opened here",
         });
       }
     }
-    if (isAtEnd()) {
-      throw error({
+    if (this.isAtEnd()) {
+      throw this.error({
         message: "reached end of input while parsing expression",
-        location: startOfExpression.start,
+        location: this.startOfExpression.start,
         label: "expression started here",
       });
-    } else if (peek().start.idx === startOfExpression.start.idx) {
-      throw error({
-        message: `expected start of expression but found '${peek().lexeme}'`,
-        location: peek().start,
+    } else if (this.peek().start.idx === this.startOfExpression.start.idx) {
+      throw this.error({
+        message: `expected start of expression but found '${
+          this.peek().lexeme
+        }'`,
+        location: this.peek().start,
       });
-    } else if (peek().type === "SEMICOLON") {
-      throw error({
+    } else if (this.peek().type === "SEMICOLON") {
+      throw this.error({
         message: "unexpected statement terminator while parsing expression",
 
-        location: startOfExpression.start,
+        location: this.startOfExpression.start,
         label: "expression started here",
       });
     } else {
-      throw error({
-        message: `unexpected token '${peek().lexeme}'`,
-        location: peek().start,
+      throw this.error({
+        message: `unexpected token '${this.peek().lexeme}'`,
+        location: this.peek().start,
       });
     }
   }
 
-  function checkStatementTermination() {
-    if (!match("SEMICOLON")) {
+  checkStatementTermination() {
+    if (!this.match("SEMICOLON")) {
       // TODO: improve error by keeping track of end of tokens
-      if (!isAtEnd()) {
-        throw error({
+      if (!this.isAtEnd()) {
+        throw this.error({
           message: `expected semicolon to end statement but found '${
-            peek().lexeme
+            this.peek().lexeme
           }'`,
-          location: peek().start,
+          location: this.peek().start,
         });
       } else {
-        throw error({
+        throw this.error({
           message: "missing semicolon",
-          location: startOfStatement.start,
+          location: this.startOfStatement.start,
           label: "statement started here",
         });
       }
     }
   }
 
-  function expressionStatement() {
-    const expr = expression();
-    checkStatementTermination();
+  expressionStatement() {
+    const expr = this.expression();
+    this.checkStatementTermination();
     return new ExpressionStatement(expr);
   }
 
-  function printStatement() {
-    const expr = expression();
-    checkStatementTermination();
+  printStatement() {
+    const expr = this.expression();
+    this.checkStatementTermination();
     return new PrintStatement(expr);
   }
 
-  function block() {
-    const start = previous();
+  block() {
+    const start = this.previous();
     const statements: Declaration[] = [];
-    while (!isAtEnd() && !check("RIGHT_BRACE")) {
-      statements.push(declaration());
+    while (!this.isAtEnd() && !this.check("RIGHT_BRACE")) {
+      statements.push(this.declaration());
     }
-    if (!match("RIGHT_BRACE")) {
-      throw error({
-        message: `expected closing '}' but found '${peek().lexeme ?? "EOF"}'`,
+    if (!this.match("RIGHT_BRACE")) {
+      throw this.error({
+        message: `expected closing '}' but found '${
+          this.peek().lexeme ?? "EOF"
+        }'`,
         location: start.start,
         label: "opened here",
       });
@@ -238,63 +252,63 @@ function parse(tokens: lox.Token[], errorHandler: lox.ErrorHandler): Program {
     return statements;
   }
 
-  function statement() {
-    if (!isAtEnd()) {
-      startOfStatement = peek();
+  statement() {
+    if (!this.isAtEnd()) {
+      this.startOfStatement = this.peek();
     }
-    if (match("PRINT")) {
-      return printStatement();
-    } else if (match("LEFT_BRACE")) {
-      return new Block(block());
+    if (this.match("PRINT")) {
+      return this.printStatement();
+    } else if (this.match("LEFT_BRACE")) {
+      return new Block(this.block());
     }
-    return expressionStatement();
+    return this.expressionStatement();
   }
 
-  function declaration() {
-    if (!match("VAR")) return statement();
+  declaration() {
+    if (!this.match("VAR")) return this.statement();
     // variable declaration
-    if (!match("IDENTIFIER")) {
-      throw error({
-        message: `expected an identifier but found '${peek().lexeme}'`,
-        location: peek().start,
+    if (!this.match("IDENTIFIER")) {
+      throw this.error({
+        message: `expected an identifier but found '${this.peek().lexeme}'`,
+        location: this.peek().start,
       });
     }
-    const name = previous();
+    const name = this.previous();
     let initializer: Expression | undefined;
-    if (match("EQUAL")) {
-      initializer = expression();
+    if (this.match("EQUAL")) {
+      initializer = this.expression();
     }
-    checkStatementTermination();
+    this.checkStatementTermination();
     return new VariableDeclaration(name, initializer);
   }
 
-  function synchronize() {
+  synchronize() {
     // After a semicolon, we’re probably finished with a statement.
     // Most statements start with a keyword—for, if, return, var, etc.
     // When the next token is any of those, we’re probably about to
     // start a statement.
-    if (!isAtEnd()) {
-      advance();
+    if (!this.isAtEnd()) {
+      this.advance();
     }
-    while (!isAtEnd()) {
-      if (previous().type === "SEMICOLON") return;
-      switch (peek().type) {
+    while (!this.isAtEnd()) {
+      if (this.previous().type === "SEMICOLON") return;
+      switch (this.peek().type) {
         case "VAR":
         case "PRINT":
           return;
       }
-      advance();
+      this.advance();
     }
   }
 
-  function declarations() {
+  declarations() {
     const decls: Declaration[] = [];
-    while (!isAtEnd()) {
+    while (!this.isAtEnd()) {
       try {
-        decls.push(declaration());
+        decls.push(this.declaration());
       } catch (err) {
         if (err instanceof ParseError) {
-          synchronize();
+          this.synchronize();
         } else {
           throw err;
         }
@@ -303,14 +317,21 @@ function parse(tokens: lox.Token[], errorHandler: lox.ErrorHandler): Program {
     return decls;
   }
 
-  const program = declarations();
-  if (!isAtEnd()) {
-    throw error({
-      message: `unexpected token: '${peek().lexeme}'`,
-      location: peek().start,
-    });
+  parse() {
+    const program = this.declarations();
+    if (!this.isAtEnd()) {
+      throw this.error({
+        message: `unexpected token: '${this.peek().lexeme}'`,
+        location: this.peek().start,
+      });
+    }
+    return program;
   }
-  return program;
 }
 
-export const parser = { parse };
+export const parser = {
+  parse: (tokens: lox.Token[], errorHandler: lox.ErrorHandler) =>
+    new Parser(tokens, errorHandler).parse(),
+  parseExpression: (tokens: lox.Token[]) =>
+    new Parser(tokens, () => {}).expression(),
+};

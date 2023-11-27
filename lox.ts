@@ -1,6 +1,12 @@
 import { scanner } from "./scanner";
-import { parser } from "./parser";
-import { Environment, interpreter } from "./interpreter";
+import { ParseError, parser } from "./parser";
+import {
+  Environment,
+  EvaluationRuntimeError,
+  interpreter,
+} from "./interpreter";
+import { Expression, Program } from "./ast";
+import { stringify } from "./stringify";
 
 async function main(args: string[]) {
   if (args.length === 1) {
@@ -8,7 +14,7 @@ async function main(args: string[]) {
   } else if (args.length === 0) {
     await repl();
   } else if (args.length === 2 && args[0] === "eval") {
-    evaluate(args[1]);
+    evaluate(args[1], true);
   } else {
     Bun.write(
       Bun.stderr,
@@ -24,7 +30,7 @@ async function main(args: string[]) {
 
 async function file(name: string) {
   const source = await Bun.file(name).text();
-  return evaluate(source);
+  return evaluate(source, false);
 }
 
 async function repl() {
@@ -33,13 +39,17 @@ async function repl() {
   const utf8Decoder = new TextDecoder();
   Bun.write(Bun.stdout, "Welcome to Lox!" + prompt);
   for await (const chunk of Bun.stdin.stream()) {
-    run(utf8Decoder.decode(chunk), env);
+    run(utf8Decoder.decode(chunk), env, true);
     Bun.write(Bun.stdout, prompt);
   }
 }
 
-async function evaluate(source: string) {
-  const [hadError, hadRuntimeError] = run(source, new Environment());
+async function evaluate(source: string, allowExpression: boolean) {
+  const [hadError, hadRuntimeError] = run(
+    source,
+    new Environment(),
+    allowExpression,
+  );
   if (hadError) {
     process.exit(65);
   } else if (hadRuntimeError) {
@@ -76,8 +86,13 @@ function report(...args: Parameters<typeof createErrorReport>) {
  * Run a program from its source code string representation.
  * Return true if there was an error running the program.
  */
-function run(source: string, env: Environment): [boolean, boolean] {
-  let hasError = false;
+function run(
+  source: string,
+  env: Environment,
+  allowExpression: boolean,
+): [boolean, boolean] {
+  let errors: lox.Error[] = [];
+  const hasError = () => errors.length > 0;
   let hasRuntimeError = false;
   function getLineContent(idx: number): string {
     let lineContent = "";
@@ -92,31 +107,72 @@ function run(source: string, env: Environment): [boolean, boolean] {
     }
     return lineContent;
   }
-  const error: lox.ErrorHandler = ({
-    message,
-    location: { line, column, idx },
-    label,
-  }) => {
-    const lineContent = getLineContent(idx);
-    report(message, line, column, lineContent, label);
-    hasError = true;
-  };
-  const runtimeError: lox.ErrorHandler = ({
-    message,
-    location: { line, column, idx },
-    label,
-  }) => {
-    const lineContent = getLineContent(idx);
-    report(message, line, column, lineContent, label);
+  function reportError(error: lox.Error) {
+    const lineContent = getLineContent(error.location.idx);
+    report(
+      error.message,
+      error.location.line,
+      error.location.column,
+      lineContent,
+      error.label,
+    );
+  }
+  const runtimeError: lox.ErrorHandler = (error) => {
     hasRuntimeError = true;
+    reportError(error);
   };
-  const tokens = scanner.scanTokens(source, error);
-  if (hasError) return [true, false];
-  const ast = parser.parse(tokens, error);
-  if (hasError) return [true, false];
-  interpreter.execute(ast, runtimeError, env);
+  const tokens = scanner.scanTokens(source, (error) => {
+    reportError(error);
+    errors.push(error);
+  });
+  if (hasError()) return [true, false];
+  function parse(): Program | Expression {
+    errors = [];
+    const program = parser.parse(tokens, (error) => {
+      errors.push(error);
+    });
+    if (!allowExpression) {
+      return program;
+    }
+    const programParseErrors = errors;
+    if (hasError()) {
+      errors = [];
+      try {
+        return parser.parseExpression(tokens);
+      } catch (err) {
+        if (err instanceof ParseError) {
+          errors = programParseErrors;
+          return program;
+        } else {
+          throw err;
+        }
+      }
+    }
+    return program;
+  }
+  const ast = parse();
+  if (hasError()) {
+    errors.forEach((error) => {
+      reportError(error);
+    });
+    return [true, false];
+  }
+  if (ast instanceof Expression) {
+    try {
+      const value = interpreter.evaluateExpression(ast, env);
+      Bun.write(Bun.stdout, `${stringify(value)}\n`);
+    } catch (err) {
+      if (err instanceof EvaluationRuntimeError) {
+        runtimeError(err.error);
+      } else {
+        throw err;
+      }
+    }
+  } else {
+    interpreter.execute(ast, runtimeError, env);
+  }
   if (hasRuntimeError) return [false, true];
-  return [hasError, hasRuntimeError];
+  return [hasError(), hasRuntimeError];
 }
 
 declare global {
@@ -133,4 +189,5 @@ declare global {
 export const lox = {
   main,
   createErrorReport,
+  run,
 };
