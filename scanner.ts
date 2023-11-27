@@ -1,70 +1,8 @@
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace lox {
-    type TokenType =
-      | "EOF"
-      // Single-character tokens
-      | "LEFT_PAREN"
-      | "RIGHT_PAREN"
-      | "LEFT_BRACE"
-      | "RIGHT_BRACE"
-      | "COMMA"
-      | "DOT"
-      | "MINUS"
-      | "PLUS"
-      | "SEMICOLON"
-      | "SLASH"
-      | "STAR"
-      // One or two character tokens
-      | "BANG"
-      | "BANG_EQUAL"
-      | "EQUAL"
-      | "EQUAL_EQUAL"
-      | "GREATER"
-      | "GREATER_EQUAL"
-      | "LESS"
-      | "LESS_EQUAL"
-      // Literals
-      | "IDENTIFIER"
-      | "STRING"
-      | "NUMBER"
-      // Keywords
-      | "AND"
-      | "CLASS"
-      | "ELSE"
-      | "FALSE"
-      | "FUN"
-      | "FOR"
-      | "IF"
-      | "NIL"
-      | "OR"
-      | "PRINT"
-      | "RETURN"
-      | "SUPER"
-      | "THIS"
-      | "TRUE"
-      | "VAR"
-      | "WHILE";
-    type Location = {
-      line: number; // line number in the program
-      column: number; // column index in the line
-      idx: number; // global index in the source string
-    };
-    type Value = number | string | boolean | null; // internal value representation
-    type Token = {
-      type: TokenType;
-      lexeme: string;
-      literal?: Value;
-      start: Location;
-    };
-  }
-}
-
 type char = string;
 
 const NULL_CHAR = "\0";
 
-export const EOF: lox.Token = {
+export const EOF: LoxToken = {
   type: "EOF",
   lexeme: "EOF",
   start: { line: -1, column: -1, idx: -1 },
@@ -78,7 +16,7 @@ function isAlpha(c: char) {
   return (c >= "a" && c <= "z") || (c >= "A" && c <= "Z");
 }
 
-const keywords: Record<string, lox.TokenType> = {
+const keywords: Record<string, LoxTokenType> = {
   and: "AND",
   class: "CLASS",
   else: "ELSE",
@@ -97,8 +35,8 @@ const keywords: Record<string, lox.TokenType> = {
   while: "WHILE",
 };
 
-function scanTokens(source: string, error: lox.ErrorHandler): lox.Token[] {
-  const tokens: lox.Token[] = [];
+function scanTokens(source: string, error: LoxErrorHandler): LoxToken[] {
+  const tokens: LoxToken[] = [];
   let line = 1; // number of current line
   let idx = 0; // index of next character to be consuemed
   let start = idx; // start of current token
@@ -108,7 +46,7 @@ function scanTokens(source: string, error: lox.ErrorHandler): lox.Token[] {
   function isAtEnd() {
     return !(idx < source.length);
   }
-  function addToken(type: lox.TokenType, literal?: lox.Value) {
+  function addToken(type: LoxTokenType, literal?: LoxValue) {
     tokens.push({
       type,
       lexeme: source.slice(start, idx),

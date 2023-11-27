@@ -91,7 +91,7 @@ function run(
   env: Environment,
   allowExpression: boolean,
 ): [boolean, boolean] {
-  let errors: lox.Error[] = [];
+  let errors: LoxError[] = [];
   const hasError = () => errors.length > 0;
   let hasRuntimeError = false;
   function getLineContent(idx: number): string {
@@ -107,7 +107,7 @@ function run(
     }
     return lineContent;
   }
-  function reportError(error: lox.Error) {
+  function reportError(error: LoxError) {
     const lineContent = getLineContent(error.location.idx);
     report(
       error.message,
@@ -117,7 +117,7 @@ function run(
       error.label,
     );
   }
-  const runtimeError: lox.ErrorHandler = (error) => {
+  const runtimeError: LoxErrorHandler = (error) => {
     hasRuntimeError = true;
     reportError(error);
   };
@@ -173,18 +173,6 @@ function run(
   }
   if (hasRuntimeError) return [false, true];
   return [hasError(), hasRuntimeError];
-}
-
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace lox {
-    type Error = {
-      message: string;
-      location: lox.Location;
-      label?: string;
-    };
-    type ErrorHandler = (error: lox.Error) => void;
-  }
 }
 
 export const lox = {

@@ -15,26 +15,26 @@ import {
 import { asNotUndefined } from "./util";
 
 export class ParseError extends Error {
-  constructor(public error: lox.Error) {
+  constructor(public error: LoxError) {
     super();
   }
 }
 
 class Parser {
   private idx = 0;
-  private tokens: lox.Token[];
-  private errorHandler: lox.ErrorHandler;
-  private startOfStatement: lox.Token;
-  private startOfExpression: lox.Token;
+  private tokens: LoxToken[];
+  private errorHandler: LoxErrorHandler;
+  private startOfStatement: LoxToken;
+  private startOfExpression: LoxToken;
 
-  constructor(tokens: lox.Token[], errorHandler: lox.ErrorHandler) {
+  constructor(tokens: LoxToken[], errorHandler: LoxErrorHandler) {
     this.tokens = tokens;
     this.errorHandler = errorHandler;
     this.startOfStatement = this.tokens[0];
     this.startOfExpression = this.tokens[0];
   }
 
-  error(err: lox.Error) {
+  error(err: LoxError) {
     this.errorHandler(err);
     return new ParseError(err);
   }
@@ -62,11 +62,11 @@ class Parser {
   }
 
   // returns true if the current token is of the given type
-  check(type: lox.TokenType) {
+  check(type: LoxTokenType) {
     return this.peek().type === type;
   }
 
-  match(...types: lox.TokenType[]): boolean {
+  match(...types: LoxTokenType[]): boolean {
     const isMatch = types.some((type) => this.check(type));
     if (isMatch) {
       this.advance();
@@ -329,8 +329,8 @@ class Parser {
 }
 
 export const parser = {
-  parse: (tokens: lox.Token[], errorHandler: lox.ErrorHandler) =>
+  parse: (tokens: LoxToken[], errorHandler: LoxErrorHandler) =>
     new Parser(tokens, errorHandler).parse(),
-  parseExpression: (tokens: lox.Token[]) =>
+  parseExpression: (tokens: LoxToken[]) =>
     new Parser(tokens, () => {}).expression(),
 };

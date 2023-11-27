@@ -36,7 +36,7 @@ export class VariableDeclaration extends Declaration {
     return examiner.examineVarDeclaration(this);
   }
   constructor(
-    public name: lox.Token,
+    public name: LoxToken,
     public initializer?: Expression,
   ) {
     super();
@@ -74,7 +74,7 @@ export class Binary extends Expression {
     return examiner.examineBinary(this);
   }
   constructor(
-    public operator: lox.Token,
+    public operator: LoxToken,
     public left: Expression,
     public right: Expression,
   ) {
@@ -102,7 +102,7 @@ export class Unary extends Expression {
     return examiner.examineUnary(this);
   }
   constructor(
-    public operator: lox.Token,
+    public operator: LoxToken,
     public operand: Expression,
   ) {
     super();
@@ -116,7 +116,7 @@ export class Literal extends Expression {
   acknowledge<T>(examiner: ExpressionExaminer<T>) {
     return examiner.examineLiteral(this);
   }
-  constructor(public value: lox.Value) {
+  constructor(public value: LoxValue) {
     super();
   }
   toString() {
@@ -128,7 +128,7 @@ export class VariableReference extends Expression {
   acknowledge<T>(examiner: ExpressionExaminer<T>): T {
     return examiner.examineVariableRef(this);
   }
-  constructor(public name: lox.Token) {
+  constructor(public name: LoxToken) {
     super();
   }
   toString() {
@@ -141,7 +141,7 @@ export class Assignment extends Expression {
     return examiner.examineAssignment(this);
   }
   constructor(
-    public name: lox.Token,
+    public name: LoxToken,
     public value: Expression,
   ) {
     super();

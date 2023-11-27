@@ -6,8 +6,8 @@ import { Expression } from "./ast";
 describe("scan ==> parse", () => {
   function execute(source: string, error: unknown) {
     const program = parser.parse(
-      scanner.scanTokens(source, error as lox.ErrorHandler),
-      error as lox.ErrorHandler,
+      scanner.scanTokens(source, error as LoxErrorHandler),
+      error as LoxErrorHandler,
     );
     if (program instanceof Expression) {
       return "EXPRESSION";

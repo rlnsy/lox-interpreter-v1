@@ -12,7 +12,7 @@ import {
 import { Environment, interpreter } from "./interpreter";
 
 describe("interpreter", () => {
-  const start: lox.Location = { line: 1, column: 0, idx: 0 }; // placeholder token location
+  const start: LoxLocation = { line: 1, column: 0, idx: 0 }; // placeholder token location
   const ONE = new Literal(1);
   const ZERO = new Literal(0);
   const TWO = new Literal(2);
@@ -25,7 +25,7 @@ describe("interpreter", () => {
   const HELLO = new Literal("hello");
   const DIVIDE = { type: "SLASH", lexeme: "/", start } as const;
   const LESS = { type: "LESS", lexeme: "<", start } as const;
-  const cases: [Expression, lox.Value][] = [
+  const cases: [Expression, LoxValue][] = [
     [ONE, 1],
     [HELLO, "hello"],
     [new Unary(MINUS, ONE), -1],
@@ -65,7 +65,7 @@ describe("interpreter", () => {
     expect(error).not.toHaveBeenCalled();
     expect(write).toHaveBeenCalled();
   });
-  const errorCases: [Program, lox.Error][] = [
+  const errorCases: [Program, LoxError][] = [
     [
       [new ExpressionStatement(new Binary(DIVIDE, ONE, ZERO))],
       { message: "divide by zero", location: start },
@@ -89,7 +89,7 @@ describe("interpreter", () => {
   ];
   errorCases.forEach(([input, expected]) => {
     test(`~err~ ${input}`, () => {
-      const errors: lox.Error[] = [];
+      const errors: LoxError[] = [];
       const error = mock((err) => {
         errors.push(err);
       });

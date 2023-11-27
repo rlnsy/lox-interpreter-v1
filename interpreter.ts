@@ -17,24 +17,24 @@ import {
 } from "./ast";
 import { stringify } from "./stringify";
 
-function isNumber(value: lox.Value): value is number {
+function isNumber(value: LoxValue): value is number {
   return typeof value === "number" && !isNaN(value);
 }
 
-function isString(value: lox.Value): value is string {
+function isString(value: LoxValue): value is string {
   return typeof value === "string";
 }
 
 export class EvaluationRuntimeError extends Error {
-  constructor(public error: lox.Error) {
+  constructor(public error: LoxError) {
     super();
   }
 }
 
 function checkNumber(
-  value: lox.Value,
+  value: LoxValue,
   errorLabel: string,
-  errorLocation: lox.Location,
+  errorLocation: LoxLocation,
 ): asserts value is number {
   if (!isNumber(value)) {
     throw new EvaluationRuntimeError({
@@ -48,29 +48,29 @@ function checkNumber(
  * Assign type-like name to each category of lox value
  * based on the internal representation
  */
-function loxTypeOf(value: lox.Value) {
+function loxTypeOf(value: LoxValue) {
   if (value === null) return "nil";
   if (typeof value === "boolean") return `${value}`;
   return typeof value; // string or number
 }
 
-const unreachable: lox.Value =
+const unreachable: LoxValue =
   "Look at you, sneaky weasel. You reached some unreachable code!";
 
 export class Environment {
-  env = new Map<string, lox.Value>();
+  env = new Map<string, LoxValue>();
   constructor(private outer?: Environment) {}
-  initialize(name: string, value: lox.Value): void {
+  initialize(name: string, value: LoxValue): void {
     this.env.set(name, value);
   }
-  reassign(name: string, value: lox.Value) {
+  reassign(name: string, value: LoxValue) {
     if (this.outer && this.outer.isDefined(name)) {
       this.outer.reassign(name, value);
     } else {
       this.env.set(name, value);
     }
   }
-  getValue(name: string): lox.Value | undefined {
+  getValue(name: string): LoxValue | undefined {
     if (!this.env.has(name) && this.outer !== undefined) {
       console.log("looking up in outer");
       return this.outer.getValue(name);
@@ -86,10 +86,10 @@ export class Environment {
 }
 
 class Evaluator
-  implements ExpressionExaminer<lox.Value>, DeclarationExaminer<void>
+  implements ExpressionExaminer<LoxValue>, DeclarationExaminer<void>
 {
   constructor(
-    private error: lox.ErrorHandler,
+    private error: LoxErrorHandler,
     private env: Environment,
   ) {}
   execute(p: Program): void {
@@ -111,7 +111,7 @@ class Evaluator
   executeDeclaration(d: Declaration) {
     d.acknowledge(this);
   }
-  evaluateExpression(expr: Expression): lox.Value {
+  evaluateExpression(expr: Expression): LoxValue {
     return expr.acknowledge(this);
   }
   examineExpressionStatement(statement: ExpressionStatement) {
@@ -124,7 +124,7 @@ class Evaluator
   examineLiteral(expression: Literal) {
     return expression.value;
   }
-  examineUnary({ operator: op, operand: operandExpr }: Unary): lox.Value {
+  examineUnary({ operator: op, operand: operandExpr }: Unary): LoxValue {
     const operand = this.evaluateExpression(operandExpr);
     if (op.type === "MINUS") {
       if (!isNumber(operand)) {
@@ -139,10 +139,10 @@ class Evaluator
     }
     return unreachable;
   }
-  examineParenthesized(expression: Parenthesized): lox.Value {
+  examineParenthesized(expression: Parenthesized): LoxValue {
     return this.evaluateExpression(expression.expression);
   }
-  examineBinary(expression: Binary): lox.Value {
+  examineBinary(expression: Binary): LoxValue {
     const left = this.evaluateExpression(expression.left);
     const right = this.evaluateExpression(expression.right);
     const op = expression.operator;
@@ -190,7 +190,7 @@ class Evaluator
     return unreachable;
   }
 
-  examineVariableRef(expression: VariableReference): lox.Value {
+  examineVariableRef(expression: VariableReference): LoxValue {
     const value = this.env.getValue(expression.name.lexeme);
     if (value === undefined) {
       throw new EvaluationRuntimeError({
@@ -208,7 +208,7 @@ class Evaluator
     this.env.initialize(decl.name.lexeme, initialValue);
   }
 
-  examineAssignment(expression: Assignment): lox.Value {
+  examineAssignment(expression: Assignment): LoxValue {
     const value = this.evaluateExpression(expression.value);
     const name = expression.name.lexeme;
     if (!this.env.isDefined(name)) {
@@ -242,7 +242,7 @@ export const interpreter = {
   evaluateExpression(e: Expression, env: Environment) {
     return new Evaluator(() => {}, env).evaluateExpression(e);
   },
-  execute(p: Program, errorHandler: lox.ErrorHandler, env: Environment) {
+  execute(p: Program, errorHandler: LoxErrorHandler, env: Environment) {
     return new Evaluator(errorHandler, env).execute(p);
   },
 };
