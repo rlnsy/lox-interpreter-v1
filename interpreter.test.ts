@@ -93,7 +93,7 @@ describe("interpreter", () => {
       const error = mock((err) => {
         errors.push(err);
       });
-      const result = interpreter.execute(input, error, new Environment());
+      interpreter.execute(input, error, new Environment());
       expect(error).toHaveBeenCalled();
       expect(errors).toEqual([expected]);
     });

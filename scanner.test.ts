@@ -1,5 +1,5 @@
 import { scanner, EOF } from "./scanner";
-import { describe, test, expect, mock, jest } from "bun:test";
+import { describe, test, expect, mock } from "bun:test";
 
 describe("scanTokens", () => {
   test("ϵ", () => {
@@ -22,11 +22,11 @@ describe("scanTokens", () => {
     expect(tokens).toEqual([{ type: "EQUAL", lexeme: "=", start }, EOF]);
   });
   test("error", () => {
-    let errors: unknown[] = [];
+    const errors: unknown[] = [];
     const error = (err: unknown) => {
       errors.push(err);
     };
-    const tokens = scanner.scanTokens("?", error);
+    scanner.scanTokens("?", error);
     expect(errors).toEqual([
       {
         message: "unexpected character",
@@ -35,11 +35,11 @@ describe("scanTokens", () => {
     ]);
   });
   test("error at column", () => {
-    let errors: unknown[] = [];
+    const errors: unknown[] = [];
     const error = (err: unknown) => {
       errors.push(err);
     };
-    const tokens = scanner.scanTokens("+++?", error);
+    scanner.scanTokens("+++?", error);
     expect(errors).toEqual([
       {
         message: "unexpected character",
@@ -104,11 +104,11 @@ describe("scanTokens", () => {
     ]);
   });
   test("error at line", () => {
-    let errors: unknown[] = [];
+    const errors: unknown[] = [];
     const error = (err: unknown) => {
       errors.push(err);
     };
-    const tokens = scanner.scanTokens("+++\n=?", error);
+    scanner.scanTokens("+++\n=?", error);
     expect(errors).toEqual([
       {
         message: "unexpected character",
@@ -306,11 +306,11 @@ describe("scanTokens", () => {
     ]);
   });
   test("unterminated string error", () => {
-    let errors: unknown[] = [];
+    const errors: unknown[] = [];
     const error = (err: unknown) => {
       errors.push(err);
     };
-    const tokens = scanner.scanTokens(`"hello`, error);
+    scanner.scanTokens(`"hello`, error);
     expect(errors).toEqual([
       {
         message: "unterminated string",
@@ -320,11 +320,11 @@ describe("scanTokens", () => {
     ]);
   });
   test("unterminated string error 2", () => {
-    let errors: unknown[] = [];
+    const errors: unknown[] = [];
     const error = (err: unknown) => {
       errors.push(err);
     };
-    const tokens = scanner.scanTokens(`+++ "hello`, error);
+    scanner.scanTokens(`+++ "hello`, error);
     expect(errors).toEqual([
       {
         message: "unterminated string",
@@ -338,11 +338,11 @@ describe("scanTokens", () => {
     ]);
   });
   test("unterminated string error 3", () => {
-    let errors: unknown[] = [];
+    const errors: unknown[] = [];
     const error = (err: unknown) => {
       errors.push(err);
     };
-    const tokens = scanner.scanTokens(`+++ "hello\n`, error);
+    scanner.scanTokens(`+++ "hello\n`, error);
     expect(errors).toEqual([
       {
         message: "unterminated string",

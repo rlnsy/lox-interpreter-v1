@@ -176,6 +176,7 @@ function run(
 }
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace lox {
     type Error = {
       message: string;

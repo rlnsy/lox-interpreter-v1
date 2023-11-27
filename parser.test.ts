@@ -178,7 +178,6 @@ describe("parse", () => {
     expect(result.expression.right).toBeInstanceOf(Literal);
   });
   test("(1 / (2 * 3)) + 1", () => {
-    const error = mock(() => {});
     const tokens: lox.Token[] = [
       { type: "LEFT_PAREN", lexeme: "(", start },
       { type: "NUMBER", lexeme: "1", literal: 1, start },

@@ -2,11 +2,7 @@ import { test, expect } from "bun:test";
 import { scanner } from "./scanner";
 import { parser } from "./parser";
 import { Environment, interpreter } from "./interpreter";
-import { Expression, Program } from "./ast";
-
-function expectNotNull<T>(value: T | null): asserts value is T {
-  expect(value).not.toBeNull();
-}
+import { Expression } from "./ast";
 
 function run(
   input: string,
@@ -85,7 +81,7 @@ print;
 1+=1;
 print "hi"
     `,
-  (output, { hasParseError }) => {
+  (_, { hasParseError }) => {
     expect(hasParseError).toBeTrue();
   },
 );
@@ -117,7 +113,7 @@ run(
 a = 1;
 print a;
     `,
-  (output, { hasRunError }) => {
+  (_, { hasRunError }) => {
     expect(hasRunError).toBeTrue();
   },
 );
@@ -126,7 +122,7 @@ run(
   `
 -true;
     `,
-  (output, { hasRunError }) => {
+  (_, { hasRunError }) => {
     expect(hasRunError).toBeTrue();
   },
 );
