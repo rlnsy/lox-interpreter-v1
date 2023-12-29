@@ -11,6 +11,7 @@ import {
   VariableReference,
   Assignment,
   Block,
+  IfStatement,
 } from "./ast";
 import { asNotUndefined } from "./util";
 
@@ -259,8 +260,32 @@ class Parser {
       return this.printStatement();
     } else if (this.match("LEFT_BRACE")) {
       return new Block(this.block());
+    } else if (this.match("IF")) {
+      return this.ifStatement();
     }
     return this.expressionStatement();
+  }
+
+  ifStatement(): IfStatement {
+    if (!this.match("LEFT_PAREN")) {
+      throw this.error({
+        message: `expected "(" for if condition`,
+        location: this.previous().start,
+        label: "if statement started here",
+      });
+    }
+    const openToken = this.previous();
+    const expr = this.expression();
+    if (!this.match("RIGHT_PAREN")) {
+      throw this.error({
+        message: `expected closing ")"`,
+        location: openToken.start,
+        label: "opened here",
+      });
+    }
+    const stmt = this.statement();
+    const elseBranch = this.match("ELSE") ? this.statement() : undefined;
+    return new IfStatement(expr, stmt, elseBranch);
   }
 
   declaration() {

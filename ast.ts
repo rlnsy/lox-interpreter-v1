@@ -46,6 +46,19 @@ export class VariableDeclaration extends Declaration {
   }
 }
 
+export class IfStatement extends Statement {
+  acknowledge<T>(examiner: DeclarationExaminer<T>): T {
+    return examiner.examineIf(this);
+  }
+  constructor(
+    public cond: Expression,
+    public stmt: Statement,
+    public elseStmt?: Statement,
+  ) {
+    super();
+  }
+}
+
 export class Block extends Statement {
   acknowledge<T>(examiner: DeclarationExaminer<T>): T {
     return examiner.examineBlock(this);
@@ -63,6 +76,7 @@ export interface DeclarationExaminer<T> {
   examinePrint(statement: PrintStatement): T;
   examineVarDeclaration(decl: VariableDeclaration): T;
   examineBlock(b: Block): T;
+  examineIf(statement: IfStatement): T;
 }
 
 export abstract class Expression {

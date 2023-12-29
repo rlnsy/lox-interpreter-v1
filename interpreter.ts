@@ -14,6 +14,7 @@ import {
   VariableDeclaration,
   Assignment,
   Block,
+  IfStatement,
 } from "./ast";
 import { stringify } from "./stringify";
 
@@ -52,6 +53,10 @@ function loxTypeOf(value: LoxValue) {
   if (value === null) return "nil";
   if (typeof value === "boolean") return `${value}`;
   return typeof value; // string or number
+}
+
+function isFalsyValue(value: LoxValue) {
+  return value === null || value == false;
 }
 
 const unreachable: LoxValue =
@@ -135,7 +140,7 @@ class Evaluator
       }
       return -operand;
     } else if (op.type === "BANG") {
-      return operand === null || operand == false;
+      return isFalsyValue(operand);
     }
     return unreachable;
   }
@@ -219,6 +224,15 @@ class Evaluator
     }
     this.env.reassign(expression.name.lexeme, value);
     return value;
+  }
+
+  examineIf(statement: IfStatement): void {
+    const cond = this.evaluateExpression(statement.cond);
+    if (!isFalsyValue(cond)) {
+      this.executeDeclaration(statement.stmt);
+    } else if (statement.elseStmt !== undefined) {
+      this.executeDeclaration(statement.elseStmt);
+    }
   }
 
   examineBlock(b: Block): void {

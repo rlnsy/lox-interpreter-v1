@@ -166,4 +166,126 @@ print "hi"
       },
     );
   });
+  test("if no paren", () => {
+    run(
+      `
+if
+	`,
+      false,
+      (output, [error]) => {
+        expect(error).toBeTrue;
+        expect(output).toEqual([
+          `Error: expected "(" for if condition
+    2 | if
+        ^-- if statement started here
+`,
+        ]);
+      },
+    );
+  });
+  test("if no close paren", () => {
+    run(
+      `
+if (false
+	`,
+      false,
+      (output, [error]) => {
+        expect(error).toBeTrue;
+        expect(output).toEqual([
+          `Error: expected closing ")"
+    2 | if (false
+           ^-- opened here
+`,
+        ]);
+      },
+    );
+  });
+  test("if cond fail no else", () => {
+    run(
+      `
+	      if (1 == 2) {
+		      print("uh oh");
+	      }
+	     `,
+      false,
+      (output) => {
+        expect(output).toBeEmpty();
+      },
+    );
+  });
+  test("if cond true", () => {
+    run(
+      `
+	      if (2 == 2) {
+		      print("success");
+	      }
+	     `,
+      false,
+      (output) => {
+        expect(output).toEqual(["success\n"]);
+      },
+    );
+  });
+  test("if cond fail with else", () => {
+    run(
+      `
+	      if (1 == 2) {
+		      print("uh oh");
+	      } else {
+		      print("OK");
+	      }
+	     `,
+      false,
+      (output) => {
+        expect(output).toEqual(["OK\n"]);
+      },
+    );
+  });
+  test("if else without braces", () => {
+    run(
+      `
+	      if (1 == 2) print("uh oh");
+	      else print("OK");
+	     `,
+      false,
+      (output) => {
+        expect(output).toEqual(["OK\n"]);
+      },
+    );
+  });
+  test("if without braces fall through", () => {
+    run(
+      `
+	      if (1 == 2) print("uh oh");
+	      print("OK");
+	     `,
+      false,
+      (output) => {
+        expect(output).toEqual(["OK\n"]);
+      },
+    );
+  });
+  test("if with falsy value", () => {
+    run(
+      `
+	      if (nil) print("uh oh");
+	      print("OK");
+	     `,
+      false,
+      (output) => {
+        expect(output).toEqual(["OK\n"]);
+      },
+    );
+  });
+  test("if with truthy value", () => {
+    run(
+      `
+	      if (1) print("OK");
+	     `,
+      false,
+      (output) => {
+        expect(output).toEqual(["OK\n"]);
+      },
+    );
+  });
 });
